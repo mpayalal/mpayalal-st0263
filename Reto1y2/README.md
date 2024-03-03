@@ -9,6 +9,7 @@
   
 <br>**Título:** P2P - Comunicación entre procesos mediante API REST, RPC y MOM
 <br>**Objetivo:** Diseñar e implementar una red P2P para soportar un sistema distribuido de manejo de archivos.
+<br>**Sustentación:** https://www.youtube.com/watch?v=rR_rQgQtQvM
 
 ## 1. Descripción de la actividad
 #### 1.1. Aspectos cumplidos:
@@ -26,7 +27,7 @@ Según lo solicitado para este reto, faltó implementar los siguientes aspectos:
 ## 2. Arquitectura del sistema
 
 
-## 3. Descripción del ambiente de desarrollo y técnco
+## 3. Descripción del ambiente de desarrollo y técnico
 #### 3.1. Desarrollo
 Todo el proyecto fue desarrollado en el lenguaje Python. Este tiene una estructura como se puede observar a continuación:
 
@@ -146,4 +147,5 @@ Cuando se haga esto ya saldrá el menú de actividades de lo que se puede hacer.
 
 ![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/99973835-4054-48f5-abcd-bff397c846b1)
 
-El siguiente paso sería entonces crear otro peer de la misma manera, cambiando solo el valor del puerto del pServer, este podría ser *5002*, y ya si se podría cargar y descargar archivos. Para esto solo se debe escoger la opción del menú y dependiendo de la acción escogida, el mismo sistema va pidiendo los datos necesarios. Para ver un ejemplo más detallado diriganse al siguiente video: **VIDEO YOUTUBE**
+El siguiente paso sería entonces crear otro peer de la misma manera, cambiando solo el valor del puerto del pServer, este podría ser *5002*, y ya si se podría cargar y descargar archivos. Para esto solo se debe escoger la opción del menú y dependiendo de la acción escogida, el mismo sistema va pidiendo los datos necesarios. Para ver un ejemplo más detallado diriganse al siguiente video: https://www.youtube.com/watch?v=UlKCfl2k3os
+
