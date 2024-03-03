@@ -4,8 +4,9 @@
 **Curso:** ST0263 - Tópicos Especiales en Telemática
 <br>**Profesor:** Edwin Montoya - emontoya@eafit.edu.co
 <br>**Estudiantes:**
-<br>- **Autora:** Maria Paula Ayala - mpayalal@eafit.edu.co
-<br>- **Coautor:** Juan Felipe Pinzón - jfpinzont@eafit.edu.co
+- **Autora:** Maria Paula Ayala - mpayalal@eafit.edu.co
+- **Coautor:** Juan Felipe Pinzón - jfpinzont@eafit.edu.co
+  
 <br>**Título:** P2P - Comunicación entre procesos mediante API REST, RPC y MOM
 <br>**Objetivo:** Diseñar e implementar una red P2P para soportar un sistema distribuido de manejo de archivos.
 
