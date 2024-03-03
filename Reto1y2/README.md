@@ -3,20 +3,24 @@
 
 **Curso:** ST0263 - Tópicos Especiales en Telemática
 <br>**Profesor:** Edwin Montoya - emontoya@eafit.edu.co
-<br>**Estudiante:** Maria Paula Ayala - mpayalal@eafit.edu.co
+<br>**Estudiantes:**
+<br>- **Autora:** Maria Paula Ayala - mpayalal@eafit.edu.co
+<br>- **Coautor:** Juan Felipe Pinzón - jfpinzont@eafit.edu.co
 <br>**Título:** P2P - Comunicación entre procesos mediante API REST, RPC y MOM
 <br>**Objetivo:** Diseñar e implementar una red P2P para soportar un sistema distribuido de manejo de archivos.
 
 ## 1. Descripción de la actividad
 #### 1.1. Aspectos cumplidos:
-En este reto se cumplió con la arquitectura P2P no estructurada, la cual se detalla en el apartado [2](https://github.com/mpayalal/mpayalal-st0263/blob/main/Reto1y2/README.md#2-arquitectura-del-sistema), se logró la comunicación entre pServer, pClient y centralServer por medio de API REST. 
-
-Además, el cliente puede conectarse y desconectarse a la red, y subir y descargar archivos, comunicandose siempre por medio de un peer vecino. 
+En este reto se cumplió con la arquitectura P2P no estructurada basada en servidor de directorio y localización, la cual se detalla en el [apartado 2](https://github.com/mpayalal/mpayalal-st0263/blob/main/Reto1y2/README.md#2-arquitectura-del-sistema). En este se logró la comunicación entre las entidades del peer (pServer y pClient) y el servidor central por medio del middleware API REST. 
+ 
+Además, el cliente puede conectarse y desconectarse a la red, y subir y descargar archivos, comunicandose siempre por medio de un peer vecino que funciona como intermediario. 
 
 #### 1.2. Aspectos no desarrollados:
-No se realizó la comunicación por medio de gRPC y tampoco se guardan los datos de IP ni Puerto dinámicamente, cuando se inician el pServer y el pClient piden esta información por medio de la consola.
-
-Hizo falta también el ping constante para verificar que los peers siguieran activos dentro de la red.
+Según lo solicitado para este reto, faltó implementar los siguientes aspectos:
+- La comunicación por medio del middleware gRPC.
+- Los datos de IP y Puerto de los peers no se guardan ni leen dinámicamente, esta información se pide por medio de la consola cuando se inicializan.
+- No se verifica que los peers sigan activos dentro de la red, se asume que siguen conectados a menos de que hagan logout.
+- Si un peer se sale de la red, se borran sus archivos para siempre. Si se vuelve a conectar tendría que volver a subir sus archivos otra vez.
 
 ## 2. Arquitectura del sistema
 
@@ -26,13 +30,13 @@ Hizo falta también el ping constante para verificar que los peers siguieran act
 Todo el proyecto fue desarrollado en el lenguaje Python. Este tiene una estructura como se puede observar a continuación:
 
 ```bash
-  Reto1y2
+  Reto1y2/
   |
-  |- CentralServer
+  |- CentralServer/
   |  |
   |  |- app.py
   |
-  |- Peer
+  |- Peer/
   |  |
   |  |- pClientApp.py
   |  |- pServerApp.py
@@ -82,8 +86,63 @@ Por úlitmo, tenemos el archivo pServerApp.py, el cual fue realizado con el fram
 - /fileToUpload [POST]: Se comunica con el servidor central para guardar un nuevo archivo, en donde le envía el id del peer que lo está subiendo y el nombre del archivo.
 
 #### 3.2. Ejecución local
+Antes de empezar a correr el programa, debes verificar que cuentes con una versión 3.x de Python, si no lo tienes debes instalarlo.
 
-## 4. Descripción del ambiente de ejecución
+Cuando ya tengas instalado python debes instalar Flask y requests, esto se hace de la siguiente manera:
 
+```bash
+  pip install Flask
 
+  pip install requests
+```
 
+Cuando ya se tengan estas librerias descargadas ya podemos correr el proyecto. Lo primero que vamos a hacer es abrir 1 terminal en donde correremos el servidor central, y vamos a abrir otras terminales para que cada una sea un peer, estas las dividimos en 2 para tener cliente y servidor juntos. 
+
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/3286c303-8560-4a6f-a88b-29237f48e9fd)
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/377bfc9e-eabe-4a38-8c70-0f161050a167)
+
+Cuando ya tenemos todo dividido, en la terminal del servidor central lo inciamos así:
+
+```bash
+  py app.py
+```
+Y va a salir un mensaje avisando en qué dirección está corriendo, como es local, siempre va a ser http://127.0.0.1:5000. 
+
+Luego nos dirigimos a la terminal del Peer 0 y vamos a ejecutar primero el pServer, este nos va a pedir los datos de la IP del servidor central, que es 127.0.0.1, y el puerto para el pServer, para el ejemplo vamos a utilizar el *5001*, por lo que la ejecución en la consola se vería así:
+
+```bash
+  py pServerApp.py
+
+  Central server IP: 127.0.0.1
+  My Port:5001
+    * Serving Flask app 'pServerApp'
+    * Debug mode: on
+  WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+    * Running on http://127.0.0.1:5001
+  Press CTRL+C to quit   
+    * Restarting with stat
+```
+Ahí mismo salga este mensaje va a volver a pedir los mismos datos, así que volvemos a ingresar la misma información y ya está corriendo el pServer del peer 0 en la dirección http://127.0.0.1:5001.
+
+``` bash
+  Central server IP: 127.0.0.1
+  My Port:5001
+    * Debugger is active!
+    * Debugger PIN: 118-598-234
+```
+
+Ahora vamos a prender el cliente, en este también nos van a pedir la información del servidor central y del servidor. Entonces quedaría así:
+
+``` bash
+  py pClientApp.py
+
+  Central server IP: 127.0.0.1
+  My server IP: 127.0.0.1
+  My server Port:5001
+
+```
+Cuando se haga esto ya saldrá el menú de actividades de lo que se puede hacer. En este caso, como es el único peer en la red solo podrá hacer logout, igualmente, si el usuario escoge la opción 1 o 2, que son upload y download respectivamente, le saldrá un mensaje avisando que no tiene peers todavía, como se puede ver a continuación.
+
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/99973835-4054-48f5-abcd-bff397c846b1)
+
+El siguiente paso sería entonces crear otro peer de la misma manera, cambiando solo el valor del puerto del pServer, este podría ser *5002*, y ya si se podría cargar y descargar archivos. Para esto solo se debe escoger la opción del menú y dependiendo de la acción escogida, el mismo sistema va pidiendo los datos necesarios. Para ver un ejemplo más detallado diriganse al siguiente video: **VIDEO YOUTUBE**
