@@ -3,7 +3,7 @@ import json
 
 id = None
 neighbour = None
-pServerURL = "http://127.0.0.1:"
+pServerURL = "http://"
 
 def display_menu():
     menu = """-------------------------------------
@@ -163,12 +163,13 @@ def check_neighbour():
 
 if __name__ == '__main__':
 
-    url = "http://127.0.0.1:5000/login"
+    serverIp = input("Central server IP: ")
+    url = "http://" + serverIp + ":5000/login"
 
-    pServerPort = input("pserverPort:")
-    pServerURL += pServerPort
-    inPort = int(input("port:"))
-    body = json.dumps({"ip":"127.0.0.1", "port":pServerPort})
+    pServerIp = input("My server IP: ")
+    pServerPort = input("My server Port:")
+    pServerURL += pServerIp + ":" + pServerPort
+    body = json.dumps({"ip":pServerIp, "port":pServerPort})
 
     headers = {'Content-Type': 'application/json'}
     
@@ -184,6 +185,6 @@ if __name__ == '__main__':
 
         while(True):
             display_menu()
-            
+
     else:
         print("Error while sending information:", response.status_code)

@@ -5,7 +5,7 @@ import json
 server = Flask(__name__)
 
 fileList = []
-serverURL="http://127.0.0.1:5000"
+serverURL="http://"
 
 @server.route('/askForFiles', methods=['GET'])
 def ask_for_files():
@@ -129,4 +129,7 @@ def file_to_upload():
 
 if __name__ == '__main__':
 
-    server.run(debug=True, port=int(input("port:")))
+    serverIp = input("Central server IP: ")
+    serverURL += serverIp + ":5000"
+
+    server.run(debug=True, port=int(input("My Port:")))
