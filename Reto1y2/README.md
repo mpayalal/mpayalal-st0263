@@ -26,6 +26,11 @@ Según lo solicitado para este reto, faltó implementar los siguientes aspectos:
 
 ## 2. Arquitectura del sistema
 
+Como se mencionó anteriormente, la arquitectura es P2P no estructurada, en donde se encuentra un servidor central, que es el encargado de recibir las peticiones y devolver la infromación necesaria, y cada peer cuenta con su propio cliente y servidor. A continuación se ve un diagrama en donde se ven los tipos de consulta que realiza cada elemento dentro de la red.
+
+![WhatsApp Image 2024-03-03 at 19 52 30](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/c028ad17-0720-475f-8a03-9108a61554f7)
+
+Es importante aclarar que cada comunicación manda su respectiva respuesta al elemento que realizó la consulta.
 
 ## 3. Descripción del ambiente de desarrollo y técnico
 #### 3.1. Desarrollo
