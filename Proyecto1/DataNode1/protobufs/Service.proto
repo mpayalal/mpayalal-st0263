@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package sendfile;
+
+message Request{
+    bytes resource = 2;
+}
+
+message Response{
+    int32 status_code = 1;
+    string response = 2;
+}
+
+message RequestSimple{
+    bytes resource = 3;
+}
+
+message ResponseSimple{
+    int32 status_code = 4;
+    string response = 3;
+}
+
+message openRequest{
+    string fileName = 5;
+    string mode = 6;
+}
+
+message openResponse{
+    int32 status_code = 9;
+    string response = 5;
+}
+
+message readRequest{
+    string fileName = 7;
+    string chunkUrl = 8;
+}
+
+message readResponse{
+    int32 status_code = 10;
+    bytes response = 8;
+}
+
+message writeRequest{
+    string fileName = 11;
+    string chunkUrl = 12;
+    bytes data = 13;
+}
+
+message writeResponse{
+    int32 status_code = 14;
+}
+
+service ProductService{
+    rpc clientStreaming(stream Request) returns (Response) {}
+    rpc clientSingle(RequestSimple) returns (ResponseSimple) {}
+    rpc open(openRequest) returns (openResponse) {}
+    rpc read(readRequest) returns (readResponse) {}
+    rpc write(writeRequest) returns (writeResponse) {}
+}
