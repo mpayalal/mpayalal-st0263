@@ -16,8 +16,13 @@ class ProductService(Service_pb2_grpc.ProductServiceServicer):
         return response
 
     def write(self, request, context):
-        print('request: llegó el archivo correctamente', request.fileName, request.chunkUrl, request.data)
-        response = Service_pb2.ResponseSimple(status_code=200)
+        print('request: llegó el archivo correctamente', request.fileName, request.partName, request.data)
+        response = Service_pb2.writeResponse(status_code=200)
+        return response
+    
+    def clientSingle(self, request, context):
+        print('request: llegó el archivo correctamente', request.resource)
+        response = Service_pb2.ResponseSimple(status_code=200, response = b'dfsd\r\ncvfcvfcvf\r\nsdfghbnjhbhujhbhujnbhj\r\nshedbhwks\r\nsbwubwuisn\r\nbhwbuxbka\r\naedfsfsdfsd\r\nsdfghbnjhbhujhbhujnbhj\r\nshedbhwks\r\nsbwubwuisn\r\nbhwbuxbka\r\naedfsfsdfsd\r\nsdfghbnjhbhujhbhujnbhj\r\nshedbhwks\r\nsbwubwuisn\r\nbhwbuxbka\r\naedfsfsdfsd\r\nsdfghbnjhbhujhbhujnbhj\r\nshedbhwks\r\nsbwubwuisn\r\nbhwbuxbka\r\naedfsfsdfsd\r\ncvfcvfcvf')
         return response
 
 def serve():

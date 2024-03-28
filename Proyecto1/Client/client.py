@@ -78,46 +78,119 @@ def readAll(fileName, metadata):
     fileData = metadata 
     fileComplete = b''
     for file in fileData[fileName]:
-        with grpc.insecure_channel(fileData[fileName][file]) as channel:
-            stub = Service_pb2_grpc.ProductServiceStub(channel)
-            response = stub.read(Service_pb2.readRequest(fileName = fileName))
-            fileComplete = fileComplete + response.response
+        response = readOne(fileName, fileData[fileName][file])
+        fileComplete = fileComplete + response
     return fileComplete
+
+def write(metadata):
+    BLOCKSIZE = 1024
+    indexOfTheChunk = -1
+    fileName = list(metadata.keys())[0]
+    fileData = metadata[fileName]
+    fileNumberOfParts = len(list(fileData.keys()))
+    filePartName = list(fileData.keys())[indexOfTheChunk]
+    lastChunkUrl = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+    with grpc.insecure_channel(lastChunkUrl) as channel:
+        stub = Service_pb2_grpc.ProductServiceStub(channel)
+        response = stub.clientSingle(Service_pb2.RequestSimple(resource = filePartName))
+        print(response.status_code, response.response)
     
+    newText = bytes(input('Write what you want to add to the file\n'), 'utf-8') 
+    textComplete = response.response + newText
+    print(textComplete , type(textComplete))
+    
+    index = len(textComplete)//BLOCKSIZE
+    indexComplete = len(textComplete)/BLOCKSIZE
+    i = 0
+    partNumber = getPartNumber(filePartName)
+    while i <= index:
+        if index < indexComplete and i == index:
+            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(url, textComplete[i*BLOCKSIZE:], fileName, partName)
+        elif i == 0:
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(lastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
+            partNumber = partNumber + 1
+        else:
+            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(lastChunkUrl, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
+            partNumber = partNumber + 1
+        i = i + 1
+
+def grpcWrite(url, data, fileName, partName):
+    with grpc.insecure_channel(url) as channel:
+                stub = Service_pb2_grpc.ProductServiceStub(channel)
+                response = stub.write(Service_pb2.writeRequest(fileName = fileName, data = data, partName = partName))
+                print((response.status_code))
+                
+def getPartNumber(partName):
+    number = int(partName[5:])
+    return (number)
+
+def getPartitionNumber(partitionNumber):
+    partitionNumberStr = str(partitionNumber)
+
+    partition0s = partitionNumber/1000
+
+    if(partitionNumber//10000 > 0):
+        print("Partition number is greater than 4 digits")
+    else:
+        while(int(partition0s) == 0):
+            partitionNumberStr = "0" + partitionNumberStr
+            partition0s *= 10
+
+    return partitionNumberStr
+
+def getIndexFromMetadata(index, listLength):
+    if index == listLength - 1 or index == -1:
+        return (0)
+    else:
+        return (index + 1)
+
 def display_menu():
     menu = """-------------------------------------
     What do you want to do:
     [1]. upload
     [2]. download
     [3]. read
+    [4]. write
 
     insert the NUMBER and press enter:"""
 
-    #try:
-    option = int(input(menu))
-    
-    if(option == 1):
-        upload()
-    elif(option == 2):
-        download()
-        print('download')
-    elif(option == 3):
-        data = '{"archivo.txt": {"chunk-1": "localhost:23333","chunk-2": "localhost:23334","chunk-3": "localhost:23334", "chunk-4": "localhost:23333"} }'
-        data = json.loads(data)
-        print(read(data))
-    else:
-        Error = """
-        ************************
-        ERROR: insert a valid number
-        ************************"""
-        print(Error)
+    try:
+        option = int(input(menu))
         
-    '''except ValueError:
+        if(option == 1):
+            upload()
+        elif(option == 2):
+            download()
+            print('download')
+        elif(option == 3):
+            data = '{"archivo.txt": {"part-0001": "localhost:23333","part-0002": "localhost:23334","part-0003": "localhost:23334", "part-0004": "localhost:23333"} }'
+            data = json.loads(data)
+            print(read(data))
+        elif(option == 4):
+            data = '{"archivo.txt": {"part-0001": "localhost:23333","part-0002": "localhost:23334","part-0003": "localhost:23334", "part-0004": "localhost:23333"} }'
+            data = json.loads(data)
+            write(data)
+            
+        else:
+            Error = """
+            ************************
+            ERROR: insert a valid number
+            ************************"""
+            print(Error)
+            
+    except ValueError:
         Error = """
         ************************
         ERROR: insert a number
         ************************"""
-        print(Error)'''
+        print(Error)
 
 
 if __name__ == '__main__':
