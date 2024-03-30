@@ -9,6 +9,8 @@ import grpc
 import Service_pb2
 import Service_pb2_grpc
 
+SERVERURL = "http://127.0.0.1:5000"
+
 class ProductService(Service_pb2_grpc.ProductServiceServicer):
     def read(self, request, context):
         print('request: llegó el archivo correctamente', request.fileName)
@@ -32,45 +34,48 @@ def sendPing(serverURL):
     if response.status_code == 200:
         print("[*THREAD*] - Server listened, answered: ", response.json()["message"])
     else:
-        print("[*THREAD*] - Error while sending information:", response.status_code)
+        print("[*THREAD*] - Error while sending information:",response.json()["message"]," - code: ", response.status_code)
     
 
 def mainPing():
     global flag
     while(flag):
-        sendPing("http://127.0.0.1:5000")
+        sendPing(SERVERURL)
         time.sleep(5)
 
 def logIn(host):
     global nodeNumber
-    url = "http://127.0.0.1:5000"+"/log-in"
+    url = SERVERURL+"/log-in"
     body= json.dumps({"ip":host})
     headers = {'Content-Type': 'application/json'}
 
     response = requests.post(url=url,data=body,headers=headers)
 
     responseBody = response.json()
-    nodeNumber = responseBody["index"]
+    nodeNumber = str(responseBody["index"])
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     Service_pb2_grpc.add_ProductServiceServicer_to_server(ProductService(), server)
 
     host = 'localhost:'+input("add the port:")
-    server.add_insecure_port(host)
     logIn(host)
-    print("Service is running... ")
-    server.start()
-    server.wait_for_termination()
+    server.add_insecure_port(host)
 
-if __name__ == "__main__":
-    flag = True
-    nodeNumber = 0
+    print("Service is running... ")
+
     pingThread = Thread(target=mainPing)
     pingThread.start()
 
-    serve()
+    server.start()
+    server.wait_for_termination()
     
     flag=False
     pingThread.join()
+
+if __name__ == "__main__":
+    flag = True
+    nodeNumber = "0"
+
+    serve()
 

@@ -15,16 +15,16 @@ def logIn():
     global dataNodeIndex
     req = request.get_json()
     ip = req.get("ip")
+    dataNodeIndex += 1
 
     with open("BD.json", "r") as archivo:
         datos = json.load(archivo)
 
-    datos["datanodes"][dataNodeIndex] = [ip,time.time()]
-
-    dataNodeIndex += 1
+    datos["dataNodes"][dataNodeIndex] = [ip,time.time()]
 
     with open("BD.json", "w") as archivo:
-        archivo.write(datos)
+        datosJson = json.dumps(datos)
+        archivo.write(datosJson)
         
     return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex}),202
 
@@ -35,23 +35,28 @@ def pong():
     aliveNodes = datos["dataNodes"]
     req = request.get_json()
     nodeNumber = req.get("nodeNumber")
-
+    
     if nodeNumber in aliveNodes:
-        aliveNodes[nodeNumber][1] = time.time()
+        datos["dataNodes"][nodeNumber][1] = time.time()
+
+        with open("BD.json", "w") as archivo:
+            datosJson = json.dumps(datos)
+            archivo.write(datosJson)
     else:
         return jsonify({'message':'node not found: '+str(nodeNumber)}),404
 
-    print(aliveNodes)
     return jsonify({'message':'listening'}),200
 
 def lookForDeaths():
     global flag
-    with open("BD.json", "r") as archivo:
-        datos = json.load(archivo)
-    aliveNodes = datos["dataNodes"]
     TTL = 5
 
     while (flag):
+        with open("BD.json", "r") as archivo:
+            datos = json.load(archivo)
+        
+        aliveNodes = datos["dataNodes"]
+
         print("[*thread*]")
         for node in aliveNodes:
             timeUntilLastRequest = time.time() - aliveNodes[node][1]
@@ -86,7 +91,7 @@ if __name__ == '__main__':
     lookForDeathsThread = threading.Thread(target=lookForDeaths)
     lookForDeathsThread.start()
 
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
 
     flag = False
     lookForDeathsThread.join()  
