@@ -10,38 +10,41 @@ BLOCKSIZE = 5000 # Revisar tamaño en Bytes!!
 dataNodeIndex = 0
 
 #-------------------------------------------------#
-@app.route('/log-in', methods=['POST'])
-def logIn():
-    global dataNodeIndex
-    req = request.get_json()
-    ip = req.get("ip")
-    dataNodeIndex += 1
-
+def readBD():
     with open("BD.json", "r") as archivo:
         datos = json.load(archivo)
+    
+    return datos
 
-    datos["dataNodes"][dataNodeIndex] = [ip,time.time()]
-
+def updateBD(datos:dict):
     with open("BD.json", "w") as archivo:
         datosJson = json.dumps(datos)
         archivo.write(datosJson)
+#-------------------------------------------------#
+@app.route('/log-in', methods=['POST'])
+def logIn():
+    global dataNodeIndex
+    dataNodeIndex += 1
+    req = request.get_json()
+    ip = req.get("ip")
+    
+    datos = readBD()
+    datos["dataNodes"][dataNodeIndex] = [ip,time.time()]
+    updateBD(datos)
         
     return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex}),202
 
 @app.route('/ping', methods=['POST'])
 def pong():
-    with open("BD.json", "r") as archivo:
-        datos = json.load(archivo)
+    datos = readBD()
     aliveNodes = datos["dataNodes"]
+
     req = request.get_json()
     nodeNumber = req.get("nodeNumber")
     
     if nodeNumber in aliveNodes:
         datos["dataNodes"][nodeNumber][1] = time.time()
-
-        with open("BD.json", "w") as archivo:
-            datosJson = json.dumps(datos)
-            archivo.write(datosJson)
+        updateBD(datos)
     else:
         return jsonify({'message':'node not found: '+str(nodeNumber)}),404
 
@@ -52,19 +55,30 @@ def lookForDeaths():
     TTL = 5
 
     while (flag):
-        with open("BD.json", "r") as archivo:
-            datos = json.load(archivo)
-        
-        aliveNodes = datos["dataNodes"]
-
         print("[*thread*]")
+
+        datos = readBD()
+        aliveNodes = datos["dataNodes"]
+        deathNodes = []
+
         for node in aliveNodes:
             timeUntilLastRequest = time.time() - aliveNodes[node][1]
 
             if timeUntilLastRequest > TTL*3:
-                print("node: "+str(node)+" is death")#quitar
+                print("node: "+str(node)+" is death")
+                
+                #makeNewCopy(node)
+
+                deathNodes.append(node)
             else:
                 print("node: "+str(node)+" is alive")
+
+        for node in deathNodes:
+            datos["dataNodes"].pop(node)
+
+        if(len(deathNodes)):
+            updateBD(datos)
+            
         time.sleep(10)
 #-------------------------------------------------#
 
@@ -84,7 +98,6 @@ def upload_file():
 @app.route('/downloadFile', methods = ['POST'])
 def download_file():
     pass
-
 
 if __name__ == '__main__':
     flag = True
