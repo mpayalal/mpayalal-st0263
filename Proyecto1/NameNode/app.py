@@ -10,16 +10,16 @@ BLOCKSIZE = 5000 # Revisar tamaño en Bytes!!
 dataNodeIndex = 0
 
 #-------------------------------------------------#
-def readBD():
-    with open("BD.json", "r") as archivo:
-        datos = json.load(archivo)
+def readDB():
+    with open("DB.json", "r") as dataBase:
+        dbData = json.load(dataBase)
     
-    return datos
+    return dbData
 
-def updateBD(datos:dict):
-    with open("BD.json", "w") as archivo:
-        datosJson = json.dumps(datos)
-        archivo.write(datosJson)
+def updateDB(dbData:dict):
+    with open("DB.json", "w") as dataBase:
+        dbDataJson = json.dumps(dbData)
+        dataBase.write(dbDataJson)
 #-------------------------------------------------#
 @app.route('/log-in', methods=['POST'])
 def logIn():
@@ -28,23 +28,23 @@ def logIn():
     req = request.get_json()
     ip = req.get("ip")
     
-    datos = readBD()
-    datos["dataNodes"][dataNodeIndex] = [ip,time.time()]
-    updateBD(datos)
+    dbData = readDB()
+    dbData["dataNodes"][dataNodeIndex] = [ip,time.time()]
+    updateDB(dbData)
         
     return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex}),202
 
 @app.route('/ping', methods=['POST'])
 def pong():
-    datos = readBD()
-    aliveNodes = datos["dataNodes"]
+    dbData = readDB()
+    aliveNodes = dbData["dataNodes"]
 
     req = request.get_json()
     nodeNumber = req.get("nodeNumber")
     
     if nodeNumber in aliveNodes:
-        datos["dataNodes"][nodeNumber][1] = time.time()
-        updateBD(datos)
+        dbData["dataNodes"][nodeNumber][1] = time.time()
+        updateDB(dbData)
     else:
         return jsonify({'message':'node not found: '+str(nodeNumber)}),404
 
@@ -57,28 +57,28 @@ def lookForDeaths():
     while (flag):
         print("[*thread*]")
 
-        datos = readBD()
-        aliveNodes = datos["dataNodes"]
+        dbData = readDB()
+        aliveNodes = dbData["dataNodes"]
         deathNodes = []
 
         for node in aliveNodes:
             timeUntilLastRequest = time.time() - aliveNodes[node][1]
 
             if timeUntilLastRequest > TTL*3:
-                print("node: "+str(node)+" is death")
+                print("node: "+node+" is death")
                 
                 #makeNewCopy(node)
 
                 deathNodes.append(node)
             else:
-                print("node: "+str(node)+" is alive")
+                print("node: "+node+" is alive")
 
         for node in deathNodes:
-            datos["dataNodes"].pop(node)
+            dbData["dataNodes"].pop(node)
 
         if(len(deathNodes)):
-            updateBD(datos)
-            
+            updateDB(dbData)
+
         time.sleep(10)
 #-------------------------------------------------#
 
