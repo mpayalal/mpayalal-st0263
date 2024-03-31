@@ -81,6 +81,17 @@ def lookForDeaths():
 
         time.sleep(10)
 #-------------------------------------------------#
+@app.route('/ls', methods = ['GET'])
+def ls():
+    dbData = readDB()
+    actualFiles = dbData["files"]
+
+    files = [fileName for fileName in actualFiles]
+    numFiles = len(files)
+
+    return jsonify({'numFiles':numFiles,'files':files}),200
+
+#-------------------------------------------------#
 
 @app.route('/uploadFile', methods = ['POST'])
 def upload_file():

@@ -84,9 +84,31 @@ def readAll(fileName, metadata):
             fileComplete = fileComplete + response.response
     return fileComplete
     
+def ls():
+    # Call NameNode to know which files are up in the system
+    url = nameNode + "/ls"
+
+    response = requests.get(url=url)
+
+    if response.status_code == 200:
+        responseBody = response.json()
+        numFiles = responseBody['numFiles']
+
+        if numFiles == 0:
+            print("There are no files yet")
+        else:
+            files = responseBody['files']
+            index = 1
+            for file in files:
+                print("["+str(index)+"]. "+file)
+                index+=1
+    else:
+        print("Something happened, status code: ",response.status_code)
+
 def display_menu():
     menu = """-------------------------------------
     What do you want to do:
+    [0]. list files
     [1]. upload
     [2]. download
     [3]. read
@@ -96,7 +118,9 @@ def display_menu():
     #try:
     option = int(input(menu))
     
-    if(option == 1):
+    if(option == 0):
+        ls()
+    elif(option == 1):
         upload()
     elif(option == 2):
         download()
