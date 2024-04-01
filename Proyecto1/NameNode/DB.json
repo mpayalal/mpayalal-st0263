@@ -1,1 +1,1 @@
-{"dataNodes": {}, "files": {}, "dataNodeFiles": {}}
+{"dataNodes": {"1": ["localhost:5001", 1711930130.2376976], "2": ["localhost:5002", 1711930131.0811005]}, "files": {"file1": {"part-0001": ["1", "2"], "part-0002": ["2", "1"]}, "file2": {"part-0001": ["1", "2"], "part-0002": ["1", "2"]}}, "dataNodeFiles": {}}

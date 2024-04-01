@@ -83,7 +83,7 @@ def readAll(fileName, metadata):
             response = stub.read(Service_pb2.readRequest(fileName = fileName))
             fileComplete = fileComplete + response.response
     return fileComplete
-    
+#--------------------------------------------------------------#    
 def ls():
     # Call NameNode to know which files are up in the system
     url = nameNode + "/ls"
@@ -104,7 +104,68 @@ def ls():
                 index+=1
     else:
         print("Something happened, status code: ",response.status_code)
+#--------------------------------------------------------------#    
+def getParts(fileName):
+    url = nameNode + "/getParts"
+    body= json.dumps({"fileName":fileName})
+    headers = {'Content-Type': 'application/json'}
 
+    response = requests.post(url=url,data=body,headers=headers)
+
+    if response.status_code == 200:
+        responseBody = response.json()
+        parts = responseBody["parts"]
+
+        return parts
+    elif response.status_code == 404:
+        print("File not found, check it before and try it again")
+        return None
+    else:
+        print("Something happened, status code: ",response.status_code)
+        return None
+
+def openFile():
+    fileName = input("Type the name (including the extension) of the file you want to open:")
+
+    parts = getParts(fileName)
+
+    if (parts):
+        print(parts)
+        print(type(parts))
+        menu = """-------------------------------------
+        How do you want to open the file:
+        [1]. read by chunks mode
+        [2]. read all the file
+        [3]. write mode
+
+        insert the NUMBER and press enter:"""
+
+        try:
+            option = int(input(menu))
+
+            fileData = {fileName:parts}
+
+            if(option == 1):
+                #readByChunks(fileData)
+                pass
+            elif(option == 2):
+                #readAll(fileData)
+                pass
+            elif(option == 3):
+                #write(fileData) -> acá no se si pones todo el archivo o solo el último chunk
+                pass
+            else:
+                Error = """
+                ************************
+            ERROR: insert a valid number
+            ************************"""
+                print(Error)
+        except ValueError:
+            Error = """
+            ************************
+            ERROR: insert a number
+            ************************"""
+            print(Error)
 def display_menu():
     menu = """-------------------------------------
     What do you want to do:
@@ -112,36 +173,39 @@ def display_menu():
     [1]. upload
     [2]. download
     [3]. read
+    [4]. open file
 
     insert the NUMBER and press enter:"""
 
-    #try:
-    option = int(input(menu))
-    
-    if(option == 0):
-        ls()
-    elif(option == 1):
-        upload()
-    elif(option == 2):
-        download()
-        print('download')
-    elif(option == 3):
-        data = '{"archivo.txt": {"chunk-1": "localhost:23333","chunk-2": "localhost:23334","chunk-3": "localhost:23334", "chunk-4": "localhost:23333"} }'
-        data = json.loads(data)
-        print(read(data))
-    else:
-        Error = """
-        ************************
+    try:
+        option = int(input(menu))
+        
+        if(option == 0):
+            ls()
+        elif(option == 1):
+            upload()
+        elif(option == 2):
+            download()
+            print('download')
+        elif(option == 3):
+            data = '{"archivo.txt": {"chunk-1": "localhost:23333","chunk-2": "localhost:23334","chunk-3": "localhost:23334", "chunk-4": "localhost:23333"} }'
+            data = json.loads(data)
+            print(read(data))
+        elif(option == 4):
+            openFile()
+        else:
+            Error = """
+            ************************
         ERROR: insert a valid number
         ************************"""
-        print(Error)
+            print(Error)
         
-    '''except ValueError:
+    except ValueError:
         Error = """
         ************************
         ERROR: insert a number
         ************************"""
-        print(Error)'''
+        print(Error)
 
 
 if __name__ == '__main__':

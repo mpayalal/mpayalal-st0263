@@ -90,7 +90,25 @@ def ls():
     numFiles = len(files)
 
     return jsonify({'numFiles':numFiles,'files':files}),200
+#-------------------------------------------------#
+@app.route('/getParts', methods = ['POST'])
+def getParts():
+    dbData = readDB()
+    actualFiles = dbData["files"]
 
+    req = request.get_json()
+    fileName = req.get("fileName")
+
+    if fileName in actualFiles:
+        parts = {}
+        for part in actualFiles[fileName]:
+            idOwnerDataNode = actualFiles[fileName][part][0]
+            ownerDataNode = dbData['dataNodes'][idOwnerDataNode]
+            ipOwnerDataNode = ownerDataNode[0]
+            parts[part] = ipOwnerDataNode
+        return jsonify({'parts':parts}),200
+    else:
+        return jsonify({'parts':None}),404
 #-------------------------------------------------#
 
 @app.route('/uploadFile', methods = ['POST'])
