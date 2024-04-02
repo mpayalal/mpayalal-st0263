@@ -10,57 +10,105 @@ BLOCKSIZE = 5000 # Revisar tamaño en Bytes!!
 dataNodeIndex = 0
 
 #-------------------------------------------------#
+def readDB():
+    with open("DB.json", "r") as dataBase:
+        dbData = json.load(dataBase)
+    
+    return dbData
+
+def updateDB(dbData:dict):
+    with open("DB.json", "w") as dataBase:
+        dbDataJson = json.dumps(dbData)
+        dataBase.write(dbDataJson)
+#-------------------------------------------------#
 @app.route('/log-in', methods=['POST'])
 def logIn():
     global dataNodeIndex
+    dataNodeIndex += 1
     req = request.get_json()
     ip = req.get("ip")
-
-    with open("BD.json", "r") as archivo:
-        datos = json.load(archivo)
-
-    datos["datanodes"][dataNodeIndex] = [ip,time.time()]
-
-    dataNodeIndex += 1
-
-    with open("BD.json", "w") as archivo:
-        archivo.write(datos)
+    
+    dbData = readDB()
+    dbData["dataNodes"][dataNodeIndex] = [ip,time.time()]
+    updateDB(dbData)
         
     return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex}),202
 
 @app.route('/ping', methods=['POST'])
 def pong():
-    with open("BD.json", "r") as archivo:
-        datos = json.load(archivo)
-    aliveNodes = datos["dataNodes"]
+    dbData = readDB()
+    aliveNodes = dbData["dataNodes"]
+
     req = request.get_json()
     nodeNumber = req.get("nodeNumber")
-
+    
     if nodeNumber in aliveNodes:
-        aliveNodes[nodeNumber][1] = time.time()
+        dbData["dataNodes"][nodeNumber][1] = time.time()
+        updateDB(dbData)
     else:
         return jsonify({'message':'node not found: '+str(nodeNumber)}),404
 
-    print(aliveNodes)
     return jsonify({'message':'listening'}),200
 
 def lookForDeaths():
     global flag
-    with open("BD.json", "r") as archivo:
-        datos = json.load(archivo)
-    aliveNodes = datos["dataNodes"]
     TTL = 5
 
     while (flag):
         print("[*thread*]")
+
+        dbData = readDB()
+        aliveNodes = dbData["dataNodes"]
+        deathNodes = []
+
         for node in aliveNodes:
             timeUntilLastRequest = time.time() - aliveNodes[node][1]
 
             if timeUntilLastRequest > TTL*3:
-                print("node: "+str(node)+" is death")#quitar
+                print("node: "+node+" is death")
+                
+                #makeNewCopy(node)
+
+                deathNodes.append(node)
             else:
-                print("node: "+str(node)+" is alive")
+                print("node: "+node+" is alive")
+
+        for node in deathNodes:
+            dbData["dataNodes"].pop(node)
+
+        if(len(deathNodes)):
+            updateDB(dbData)
+
         time.sleep(10)
+#-------------------------------------------------#
+@app.route('/ls', methods = ['GET'])
+def ls():
+    dbData = readDB()
+    actualFiles = dbData["files"]
+
+    files = [fileName for fileName in actualFiles]
+    numFiles = len(files)
+
+    return jsonify({'numFiles':numFiles,'files':files}),200
+#-------------------------------------------------#
+@app.route('/getParts', methods = ['POST'])
+def getParts():
+    dbData = readDB()
+    actualFiles = dbData["files"]
+
+    req = request.get_json()
+    fileName = req.get("fileName")
+
+    if fileName in actualFiles:
+        parts = {}
+        for part in actualFiles[fileName]:
+            idOwnerDataNode = actualFiles[fileName][part][0]
+            ownerDataNode = dbData['dataNodes'][idOwnerDataNode]
+            ipOwnerDataNode = ownerDataNode[0]
+            parts[part] = ipOwnerDataNode
+        return jsonify({'parts':parts}),200
+    else:
+        return jsonify({'parts':None}),404
 #-------------------------------------------------#
 
 @app.route('/uploadFile', methods = ['POST'])
@@ -80,13 +128,12 @@ def upload_file():
 def download_file():
     pass
 
-
 if __name__ == '__main__':
     flag = True
     lookForDeathsThread = threading.Thread(target=lookForDeaths)
     lookForDeathsThread.start()
 
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
 
     flag = False
     lookForDeathsThread.join()  
