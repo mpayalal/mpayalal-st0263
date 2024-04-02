@@ -19,18 +19,20 @@ class Response(_message.Message):
     def __init__(self, status_code: _Optional[int] = ..., response: _Optional[str] = ...) -> None: ...
 
 class RequestSimple(_message.Message):
-    __slots__ = ("resource",)
+    __slots__ = ("resource", "fileName")
     RESOURCE_FIELD_NUMBER: _ClassVar[int]
-    resource: bytes
-    def __init__(self, resource: _Optional[bytes] = ...) -> None: ...
+    FILENAME_FIELD_NUMBER: _ClassVar[int]
+    resource: str
+    fileName: str
+    def __init__(self, resource: _Optional[str] = ..., fileName: _Optional[str] = ...) -> None: ...
 
 class ResponseSimple(_message.Message):
     __slots__ = ("status_code", "response")
     STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     status_code: int
-    response: str
-    def __init__(self, status_code: _Optional[int] = ..., response: _Optional[str] = ...) -> None: ...
+    response: bytes
+    def __init__(self, status_code: _Optional[int] = ..., response: _Optional[bytes] = ...) -> None: ...
 
 class openRequest(_message.Message):
     __slots__ = ("fileName", "mode")
@@ -49,12 +51,12 @@ class openResponse(_message.Message):
     def __init__(self, status_code: _Optional[int] = ..., response: _Optional[str] = ...) -> None: ...
 
 class readRequest(_message.Message):
-    __slots__ = ("fileName", "chunkUrl")
+    __slots__ = ("fileName", "partName")
     FILENAME_FIELD_NUMBER: _ClassVar[int]
-    CHUNKURL_FIELD_NUMBER: _ClassVar[int]
+    PARTNAME_FIELD_NUMBER: _ClassVar[int]
     fileName: str
-    chunkUrl: str
-    def __init__(self, fileName: _Optional[str] = ..., chunkUrl: _Optional[str] = ...) -> None: ...
+    partName: str
+    def __init__(self, fileName: _Optional[str] = ..., partName: _Optional[str] = ...) -> None: ...
 
 class readResponse(_message.Message):
     __slots__ = ("status_code", "response")
@@ -65,14 +67,14 @@ class readResponse(_message.Message):
     def __init__(self, status_code: _Optional[int] = ..., response: _Optional[bytes] = ...) -> None: ...
 
 class writeRequest(_message.Message):
-    __slots__ = ("fileName", "chunkUrl", "data")
+    __slots__ = ("fileName", "partName", "data")
     FILENAME_FIELD_NUMBER: _ClassVar[int]
-    CHUNKURL_FIELD_NUMBER: _ClassVar[int]
+    PARTNAME_FIELD_NUMBER: _ClassVar[int]
     DATA_FIELD_NUMBER: _ClassVar[int]
     fileName: str
-    chunkUrl: str
+    partName: str
     data: bytes
-    def __init__(self, fileName: _Optional[str] = ..., chunkUrl: _Optional[str] = ..., data: _Optional[bytes] = ...) -> None: ...
+    def __init__(self, fileName: _Optional[str] = ..., partName: _Optional[str] = ..., data: _Optional[bytes] = ...) -> None: ...
 
 class writeResponse(_message.Message):
     __slots__ = ("status_code",)

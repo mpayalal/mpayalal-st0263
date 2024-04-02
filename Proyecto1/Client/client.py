@@ -54,7 +54,8 @@ def read(metadata):
         if mode == 1:
             fileData = metadata[fileName]
             firstChunkUrl = metadata[fileName][list(fileData.keys())[0]]
-            file = readOne(fileName, firstChunkUrl)
+            firstPartName = list(fileData.keys())[0]
+            file = readOne(fileName, firstChunkUrl, firstPartName)
             return file
         elif mode == 2:
             file = readAll(fileName, metadata)
@@ -66,11 +67,12 @@ def read(metadata):
             ************************"""
             print(error)
 
-def readOne(fileName, url):
+def readOne(fileName, url, partName):
     fileChunk = b''
     with grpc.insecure_channel(url) as channel:
         stub = Service_pb2_grpc.ProductServiceStub(channel)
-        response = stub.read(Service_pb2.readRequest(fileName = fileName))
+        print(partName)
+        response = stub.read(Service_pb2.readRequest(fileName = fileName, partName = partName))
         fileChunk = response.response
     return (fileChunk)
 
@@ -78,12 +80,83 @@ def readAll(fileName, metadata):
     fileData = metadata 
     fileComplete = b''
     for file in fileData[fileName]:
-        with grpc.insecure_channel(fileData[fileName][file]) as channel:
-            stub = Service_pb2_grpc.ProductServiceStub(channel)
-            response = stub.read(Service_pb2.readRequest(fileName = fileName))
-            fileComplete = fileComplete + response.response
+        response = readOne(fileName, fileData[fileName][file], file)
+        fileComplete = fileComplete + response
     return fileComplete
-#--------------------------------------------------------------#    
+#--------------------------------------------------------------#
+def write(metadata):
+    BLOCKSIZE = 1024
+    indexOfTheChunk = -1
+    fileName = list(metadata.keys())[0]
+    fileData = metadata[fileName]
+    fileNumberOfParts = len(list(fileData.keys()))
+    filePartName = list(fileData.keys())[indexOfTheChunk]
+    lastChunkUrl = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+    with grpc.insecure_channel(lastChunkUrl) as channel:
+        stub = Service_pb2_grpc.ProductServiceStub(channel)
+        response = stub.clientSingle(Service_pb2.RequestSimple(resource = filePartName, fileName=fileName))
+        print(response.status_code)
+    
+    newText = bytes(input('Write what you want to add to the file\n'), 'utf-8')
+    textComplete = response.response + newText.decode('unicode-escape').encode('utf-8')
+    
+    print("longitud del testo:", len(textComplete))
+    
+    index = len(textComplete)//BLOCKSIZE
+    indexComplete = len(textComplete)/BLOCKSIZE
+    print(index, indexComplete)
+    i = 0
+    partNumber = getPartNumber(filePartName)
+    while i <= index:
+        if i == 0: 
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(lastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
+            partNumber = partNumber + 1
+            
+        elif index < indexComplete and i == index:
+            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(url, textComplete[i*BLOCKSIZE:], fileName, partName)
+            partNumber = partNumber + 1
+        else:
+            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(url, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
+            partNumber = partNumber + 1
+        i = i + 1
+
+def grpcWrite(url, data, fileName, partName):
+    with grpc.insecure_channel(url) as channel:
+                stub = Service_pb2_grpc.ProductServiceStub(channel)
+                response = stub.write(Service_pb2.writeRequest(fileName = fileName, data = data, partName = partName))
+                print((response.status_code))
+                
+def getPartNumber(partName):
+    number = int(partName[5:9])
+    return (number)
+
+def getPartitionNumber(partitionNumber):
+    partitionNumberStr = str(partitionNumber)
+
+    partition0s = partitionNumber/1000
+
+    if(partitionNumber//10000 > 0):
+        print("Partition number is greater than 4 digits")
+    else:
+        while(int(partition0s) == 0):
+            partitionNumberStr = "0" + partitionNumberStr
+            partition0s *= 10
+
+    return partitionNumberStr
+
+def getIndexFromMetadata(index, listLength):
+    if index == listLength - 1 or index == -1:
+        return (0)
+    else:
+        return (index + 1)
+
 def ls():
     # Call NameNode to know which files are up in the system
     url = nameNode + "/ls"
