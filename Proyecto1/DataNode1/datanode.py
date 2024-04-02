@@ -50,7 +50,7 @@ def writeFile(fileName, filePart, data):
         f.write(data)
         f.close
 
-"""def sendPing(serverURL):
+def sendPing(serverURL):
     global nodeNumber
     url = serverURL+"/ping"
     body= json.dumps({"nodeNumber":nodeNumber})
