@@ -13,6 +13,7 @@ message Response{
 
 message RequestSimple{
     string resource = 3;
+    string fileName = 7;
 }
 
 message ResponseSimple{
@@ -32,6 +33,7 @@ message openResponse{
 
 message readRequest{
     string fileName = 7;
+    string partName = 12;
 }
 
 message readResponse{

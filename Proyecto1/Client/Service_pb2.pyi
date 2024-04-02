@@ -19,10 +19,12 @@ class Response(_message.Message):
     def __init__(self, status_code: _Optional[int] = ..., response: _Optional[str] = ...) -> None: ...
 
 class RequestSimple(_message.Message):
-    __slots__ = ("resource",)
+    __slots__ = ("resource", "fileName")
     RESOURCE_FIELD_NUMBER: _ClassVar[int]
+    FILENAME_FIELD_NUMBER: _ClassVar[int]
     resource: str
-    def __init__(self, resource: _Optional[str] = ...) -> None: ...
+    fileName: str
+    def __init__(self, resource: _Optional[str] = ..., fileName: _Optional[str] = ...) -> None: ...
 
 class ResponseSimple(_message.Message):
     __slots__ = ("status_code", "response")
@@ -49,10 +51,12 @@ class openResponse(_message.Message):
     def __init__(self, status_code: _Optional[int] = ..., response: _Optional[str] = ...) -> None: ...
 
 class readRequest(_message.Message):
-    __slots__ = ("fileName",)
+    __slots__ = ("fileName", "partName")
     FILENAME_FIELD_NUMBER: _ClassVar[int]
+    PARTNAME_FIELD_NUMBER: _ClassVar[int]
     fileName: str
-    def __init__(self, fileName: _Optional[str] = ...) -> None: ...
+    partName: str
+    def __init__(self, fileName: _Optional[str] = ..., partName: _Optional[str] = ...) -> None: ...
 
 class readResponse(_message.Message):
     __slots__ = ("status_code", "response")

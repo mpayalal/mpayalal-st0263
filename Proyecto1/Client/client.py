@@ -54,7 +54,8 @@ def read(metadata):
         if mode == 1:
             fileData = metadata[fileName]
             firstChunkUrl = metadata[fileName][list(fileData.keys())[0]]
-            file = readOne(fileName, firstChunkUrl)
+            firstPartName = list(fileData.keys())[0]
+            file = readOne(fileName, firstChunkUrl, firstPartName)
             return file
         elif mode == 2:
             file = readAll(fileName, metadata)
@@ -66,11 +67,12 @@ def read(metadata):
             ************************"""
             print(error)
 
-def readOne(fileName, url):
+def readOne(fileName, url, partName):
     fileChunk = b''
     with grpc.insecure_channel(url) as channel:
         stub = Service_pb2_grpc.ProductServiceStub(channel)
-        response = stub.read(Service_pb2.readRequest(fileName = fileName))
+        print(partName)
+        response = stub.read(Service_pb2.readRequest(fileName = fileName, partName = partName))
         fileChunk = response.response
     return (fileChunk)
 
@@ -78,7 +80,7 @@ def readAll(fileName, metadata):
     fileData = metadata 
     fileComplete = b''
     for file in fileData[fileName]:
-        response = readOne(fileName, fileData[fileName][file])
+        response = readOne(fileName, fileData[fileName][file], file)
         fileComplete = fileComplete + response
     return fileComplete
 
@@ -92,32 +94,36 @@ def write(metadata):
     lastChunkUrl = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
     with grpc.insecure_channel(lastChunkUrl) as channel:
         stub = Service_pb2_grpc.ProductServiceStub(channel)
-        response = stub.clientSingle(Service_pb2.RequestSimple(resource = filePartName))
-        print(response.status_code, response.response)
+        response = stub.clientSingle(Service_pb2.RequestSimple(resource = filePartName, fileName=fileName))
+        print(response.status_code)
     
-    newText = bytes(input('Write what you want to add to the file\n'), 'utf-8') 
-    textComplete = response.response + newText
-    print(textComplete , type(textComplete))
+    newText = bytes(input('Write what you want to add to the file\n'), 'utf-8')
+    textComplete = response.response + newText.decode('unicode-escape').encode('utf-8')
+    
+    print("longitud del testo:", len(textComplete))
     
     index = len(textComplete)//BLOCKSIZE
     indexComplete = len(textComplete)/BLOCKSIZE
+    print(index, indexComplete)
     i = 0
     partNumber = getPartNumber(filePartName)
     while i <= index:
-        if index < indexComplete and i == index:
+        if i == 0: 
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(lastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
+            partNumber = partNumber + 1
+            
+        elif index < indexComplete and i == index:
             indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
             url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
             partName = 'part-'+getPartitionNumber(partNumber)
             grpcWrite(url, textComplete[i*BLOCKSIZE:], fileName, partName)
-        elif i == 0:
-            partName = 'part-'+getPartitionNumber(partNumber)
-            grpcWrite(lastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
             partNumber = partNumber + 1
         else:
             indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
             url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
             partName = 'part-'+getPartitionNumber(partNumber)
-            grpcWrite(lastChunkUrl, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
+            grpcWrite(url, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
             partNumber = partNumber + 1
         i = i + 1
 
@@ -128,7 +134,7 @@ def grpcWrite(url, data, fileName, partName):
                 print((response.status_code))
                 
 def getPartNumber(partName):
-    number = int(partName[5:])
+    number = int(partName[5:9])
     return (number)
 
 def getPartitionNumber(partitionNumber):
@@ -161,36 +167,36 @@ def display_menu():
 
     insert the NUMBER and press enter:"""
 
-    try:
-        option = int(input(menu))
+    #try:
+    option = int(input(menu))
+    
+    if(option == 1):
+        upload()
+    elif(option == 2):
+        download()
+        print('download')
+    elif(option == 3):
+        data = '{"archivo.txt": {"part-0001": "localhost:23333","part-0002": "localhost:23334", "part-0003": "localhost:23333","part-0004": "localhost:23334", "part-0005": "localhost:23333","part-0006": "localhost:23334"} }'
+        data = json.loads(data)
+        print(read(data))
+    elif(option == 4):
+        data = '{"archivo.txt": {"part-0001": "localhost:23333","part-0002": "localhost:23334", "part-0003": "localhost:23333","part-0004": "localhost:23334", "part-0005": "localhost:23333","part-0006": "localhost:23334"} }'
+        data = json.loads(data)
+        write(data)
         
-        if(option == 1):
-            upload()
-        elif(option == 2):
-            download()
-            print('download')
-        elif(option == 3):
-            data = '{"archivo.txt": {"part-0001": "localhost:23333","part-0002": "localhost:23334","part-0003": "localhost:23334", "part-0004": "localhost:23333"} }'
-            data = json.loads(data)
-            print(read(data))
-        elif(option == 4):
-            data = '{"archivo.txt": {"part-0001": "localhost:23333","part-0002": "localhost:23334","part-0003": "localhost:23334", "part-0004": "localhost:23333"} }'
-            data = json.loads(data)
-            write(data)
-            
-        else:
-            Error = """
-            ************************
-            ERROR: insert a valid number
-            ************************"""
-            print(Error)
-            
-    except ValueError:
+    else:
+        Error = """
+        ************************
+        ERROR: insert a valid number
+        ************************"""
+        print(Error)
+
+    '''except ValueError:
         Error = """
         ************************
         ERROR: insert a number
         ************************"""
-        print(Error)
+        print(Error)'''
 
 
 if __name__ == '__main__':
