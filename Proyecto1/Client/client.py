@@ -1,13 +1,15 @@
 import os
 import json
-import requests
 import grpc
+import math
+import requests
 import Service_pb2
 import Service_pb2_grpc
 
 nameNode = "http://127.0.0.1:5000"
+BLOCKSIZE = 1024 # Bytes
 
-def upload():
+def create_file():
     filePath = input("Please enter the path of the file you want to upload: ")
 
     # Check if the file exists
@@ -15,37 +17,29 @@ def upload():
         print("File not found, please try again")
         return
 
-    # Take the name and size of the file
+    # Take the name and size of the file, and find how many partitions are needed.
     with open(filePath, 'rb') as file:
         fileSize = len(file.read())
         fileName = os.path.basename(filePath)
+        totalParts = math.ceil(fileSize/BLOCKSIZE)
         print(f"File uploaded successfully.")
         print(f"Name: {fileName}, Size: {fileSize} bytes")
     
-    # Call NameNode to know how to partition the file
-    url = nameNode + "/uploadFile"
-    body = json.dumps({ "fileName": fileName, "fileSize": fileSize })
+    # Call NameNode to know the datanodes where to send the information
+    url = nameNode + "/createFile"
+    body = json.dumps({ "fileName": fileName, "totalParts": totalParts })
     headers = {'Content-Type': 'application/json'}
 
     response = requests.post(url=url, data=body, headers=headers)
 
     if response.status_code == 200:
         responseBody = response.json()
-        totalParts = responseBody['totalParts']
-        # urlsDataNodesLeader = responseBody['urlsDataNodesLeader']
-        # urlsDataNodesFollower = responseBody['urlsDataNodesFollower']
-
-        print(totalParts)
-
-    # Part the file - Juanfe
-        
+        urlsDataNodesPrincipal = responseBody['urlsDataNodesPrincipal']
+        urlsDataNodesCopy = responseBody['urlsDataNodesCopy']
     
-    # Send (by threads) each of the parts to their respective DataNodes
+    print(responseBody)
 
-
-def download():
-    pass
-
+    # Part the file and send it
 
 def read(metadata):
     while(1):
@@ -166,14 +160,14 @@ def openFile():
             ERROR: insert a number
             ************************"""
             print(Error)
+
 def display_menu():
     menu = """-------------------------------------
     What do you want to do:
     [0]. list files
-    [1]. upload
-    [2]. download
-    [3]. read
-    [4]. open file
+    [1]. create a new file
+    [2]. read
+    [3]. open file
 
     insert the NUMBER and press enter:"""
 
@@ -183,15 +177,12 @@ def display_menu():
         if(option == 0):
             ls()
         elif(option == 1):
-            upload()
+            create_file()
         elif(option == 2):
-            download()
-            print('download')
-        elif(option == 3):
             data = '{"archivo.txt": {"chunk-1": "localhost:23333","chunk-2": "localhost:23334","chunk-3": "localhost:23334", "chunk-4": "localhost:23333"} }'
             data = json.loads(data)
             print(read(data))
-        elif(option == 4):
+        elif(option == 3):
             openFile()
         else:
             Error = """
