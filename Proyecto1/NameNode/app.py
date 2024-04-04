@@ -73,8 +73,10 @@ def lookForDeaths():
                 deathNodes.append(node)
             else:
                 print("node: "+node+" is alive")
-            for node in deathNodes:            dbData["dataNodes"].pop(node)
-            if(len(deathNodes)):            updateDB(dbData)
+            for node in deathNodes:            
+                dbData["dataNodes"].pop(node)
+            if(len(deathNodes)):            
+                updateDB(dbData)
             time.sleep(10)
 
 #-------------------------------------------------#
@@ -174,7 +176,7 @@ def create_file():
         nodeUrl = nodeInfo[0]
         urlsDataNodesCopy.append(nodeUrl)
 
-    return jsonify({ 'urlsDataNodesPrincipal': urlsDataNodesPrincipal, 'urlsDatasNodeCopy': urlsDataNodesCopy }), 200
+    return jsonify({ 'urlsDataNodesPrincipal': urlsDataNodesPrincipal, 'urlsDataNodesCopy': urlsDataNodesCopy }), 200
 
 if __name__ == '__main__':
     flag = True
