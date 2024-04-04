@@ -47,25 +47,20 @@ def download():
     pass
 
 
-def read(metadata):
-    while(1):
-        mode = int(input('Select a mode: \n[1]. Read first chunk \n[2]. Read all file '))
-        fileName = list(metadata.keys())[0]
-        if mode == 1:
-            fileData = metadata[fileName]
-            firstChunkUrl = metadata[fileName][list(fileData.keys())[0]]
-            firstPartName = list(fileData.keys())[0]
-            file = readOne(fileName, firstChunkUrl, firstPartName)
-            return file
-        elif mode == 2:
-            file = readAll(fileName, metadata)
-            return file
-        else:
-            error = """
-            ************************
-            ERROR: insert a valid number
-            ************************"""
-            print(error)
+def read(metadata, mode):
+    mode = mode
+    fileName = list(metadata.keys())[0]
+    if mode == 1:
+        readSequential(fileName, metadata)
+    elif mode == 2:
+        readAll(fileName, metadata)
+    else:
+        error = """
+        ************************
+        ERROR: insert a valid number
+        ************************"""
+        print(error)
+
 
 def readOne(fileName, url, partName):
     fileChunk = b''
@@ -76,13 +71,45 @@ def readOne(fileName, url, partName):
         fileChunk = response.response
     return (fileChunk)
 
+def readSequential(fileName, metadata):
+    fileData = metadata[fileName]
+    listOfParts = list(fileData.keys())
+    partIndex = 0
+    while 1:
+        print(readOne(fileName, fileData[listOfParts[partIndex]], listOfParts[partIndex]))
+        action = int(input("""
+        Which part do you want to read:
+        [1]. next part
+        [2]. previous part
+        [0]. to exit
+        Insert the NUMBER and press enter: """))
+        if action == 1:
+            if partIndex == len(listOfParts)-1:
+                print('This is the last part')
+            else:
+                partIndex = partIndex + 1
+        elif action == 2:
+            if partIndex == 0:
+                print('This is the first part')
+            else:
+                partIndex = partIndex - 1
+        elif action == 0:
+            print('entra al break')
+            break
+        else:
+            error = """
+            ************************
+            ERROR: insert a valid number
+            ************************"""
+            print(error)
+
 def readAll(fileName, metadata):
     fileData = metadata 
     fileComplete = b''
     for file in fileData[fileName]:
         response = readOne(fileName, fileData[fileName][file], file)
         fileComplete = fileComplete + response
-    return fileComplete
+    print(fileComplete)
 #--------------------------------------------------------------#
 def write(metadata):
     BLOCKSIZE = 1024
@@ -217,15 +244,17 @@ def openFile():
             option = int(input(menu))
 
             fileData = {fileName:parts}
+            
+            print(fileData)
 
             if(option == 1):
-                #readByChunks(fileData)
+                read(fileData, option)
                 pass
             elif(option == 2):
-                #readAll(fileData)
+                read(fileData, option)
                 pass
             elif(option == 3):
-                #write(fileData) -> acá no se si pones todo el archivo o solo el último chunk
+                write(fileData)
                 pass
             else:
                 Error = """
@@ -239,6 +268,7 @@ def openFile():
             ERROR: insert a number
             ************************"""
             print(Error)
+            
 def display_menu():
     menu = """-------------------------------------
     What do you want to do:
