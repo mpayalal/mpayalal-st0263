@@ -93,6 +93,14 @@ def createCopy(urlCopy, content, fileName, partitionName):
         stub = Service_pb2_grpc.ProductServiceStub(channel)
         response = stub.copyPart(Service_pb2.copyRequest(content = content, fileName = fileName, partitionName = partitionName))
         print((response.status_code))
+    
+    if response.status_code == 200:
+        url = SERVERURL + "/updateFilesDB"
+        body = json.dumps({ "urlPrincipal": urlCopy, "fileName": fileName, "partitionName": partitionName })
+        headers = {'Content-Type': 'application/json'}
+
+        responseNameNode = requests.post(url=url, data=body, headers=headers)
+        print(responseNameNode.status_code)
 
 def mainPing():
     global flag

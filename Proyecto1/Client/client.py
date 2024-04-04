@@ -63,6 +63,15 @@ def createPartition(partitionNumber,fileName,content, urlPrincipal, urlCopy):
         stub = Service_pb2_grpc.ProductServiceStub(channel)
         response = stub.sendFile(Service_pb2.fileRequest(content = content, urlCopy = urlCopy, fileName = fileName, partitionName = partitionName))
         print((response.status_code))
+    
+    if response.status_code == 200:
+        url = nameNode + "/updateFilesDB"
+        body = json.dumps({ "urlPrincipal": urlPrincipal, "fileName": fileName, "partitionName": partitionName })
+        headers = {'Content-Type': 'application/json'}
+
+        responseNameNode = requests.post(url=url, data=body, headers=headers)
+        print(responseNameNode.status_code)
+
 
 def partition(file, fileName, blockSize, urlsDataNodesPrincipal, urlsDataNodesCopy):
     partitionNumber = 1
