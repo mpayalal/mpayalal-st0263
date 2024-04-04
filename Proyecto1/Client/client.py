@@ -40,7 +40,7 @@ def create_file():
     print(responseBody)
 
     # Part the file and send it
-    partition(filePath, fileName, BLOCKSIZE)
+    partition(filePath, fileName, BLOCKSIZE, urlsDataNodesPrincipal, urlsDataNodesCopy)
 
 def getPartitionNumber(partitionNumber):
     partitionNumberStr = str(partitionNumber)
@@ -56,28 +56,37 @@ def getPartitionNumber(partitionNumber):
 
     return partitionNumberStr
 
-def createPartition(partitionNumber,fileName,content):
-
+def createPartition(partitionNumber,fileName,content, urlPrincipal, urlCopy):
     partitionName = "part-" + getPartitionNumber(partitionNumber)
-    partitionPath = os.path.join("Partitions", fileName, partitionName)
-    with open(partitionPath, 'ab') as f:
-        f.write(content)
 
-def partition(file, fileName, blockSize):
-    # set up
+    with grpc.insecure_channel(urlPrincipal) as channel:
+        stub = Service_pb2_grpc.ProductServiceStub(channel)
+        response = stub.sendFile(Service_pb2.fileRequest(content = content, urlCopy = urlCopy, fileName = fileName, partitionName = partitionName))
+        print((response.status_code))
+    
+    if response.status_code == 200:
+        url = nameNode + "/updateFilesDB"
+        body = json.dumps({ "urlPrincipal": urlPrincipal, "fileName": fileName, "partitionName": partitionName })
+        headers = {'Content-Type': 'application/json'}
+
+        responseNameNode = requests.post(url=url, data=body, headers=headers)
+        print(responseNameNode.status_code)
+
+
+def partition(file, fileName, blockSize, urlsDataNodesPrincipal, urlsDataNodesCopy):
     partitionNumber = 1
-    partitionsPath = os.path.join("Partitions",fileName)
-    os.mkdir(partitionsPath)
 
     with open(file, 'rb') as f:
+        index = 0
         while True:
             block = f.read(blockSize)
 
             if not block:
                 break
-
-            createPartition(partitionNumber, fileName, block)
+            
+            createPartition(partitionNumber, fileName, block, urlsDataNodesPrincipal[index], urlsDataNodesCopy[index])
             partitionNumber += 1
+            index += 1
 
 #--------------------------------------------------------------#
 def read(metadata, mode):

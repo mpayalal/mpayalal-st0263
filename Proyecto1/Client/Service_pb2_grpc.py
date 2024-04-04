@@ -39,6 +39,16 @@ class ProductServiceStub(object):
                 request_serializer=Service__pb2.writeRequest.SerializeToString,
                 response_deserializer=Service__pb2.writeResponse.FromString,
                 )
+        self.sendFile = channel.unary_unary(
+                '/sendfile.ProductService/sendFile',
+                request_serializer=Service__pb2.fileRequest.SerializeToString,
+                response_deserializer=Service__pb2.fileResponse.FromString,
+                )
+        self.copyPart = channel.unary_unary(
+                '/sendfile.ProductService/copyPart',
+                request_serializer=Service__pb2.copyRequest.SerializeToString,
+                response_deserializer=Service__pb2.copyResponse.FromString,
+                )
 
 
 class ProductServiceServicer(object):
@@ -74,6 +84,18 @@ class ProductServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def sendFile(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def copyPart(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ProductServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -101,6 +123,16 @@ def add_ProductServiceServicer_to_server(servicer, server):
                     servicer.write,
                     request_deserializer=Service__pb2.writeRequest.FromString,
                     response_serializer=Service__pb2.writeResponse.SerializeToString,
+            ),
+            'sendFile': grpc.unary_unary_rpc_method_handler(
+                    servicer.sendFile,
+                    request_deserializer=Service__pb2.fileRequest.FromString,
+                    response_serializer=Service__pb2.fileResponse.SerializeToString,
+            ),
+            'copyPart': grpc.unary_unary_rpc_method_handler(
+                    servicer.copyPart,
+                    request_deserializer=Service__pb2.copyRequest.FromString,
+                    response_serializer=Service__pb2.copyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -194,5 +226,39 @@ class ProductService(object):
         return grpc.experimental.unary_unary(request, target, '/sendfile.ProductService/write',
             Service__pb2.writeRequest.SerializeToString,
             Service__pb2.writeResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def sendFile(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/sendfile.ProductService/sendFile',
+            Service__pb2.fileRequest.SerializeToString,
+            Service__pb2.fileResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def copyPart(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/sendfile.ProductService/copyPart',
+            Service__pb2.copyRequest.SerializeToString,
+            Service__pb2.copyResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

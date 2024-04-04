@@ -26,6 +26,40 @@ class RequestSimple(_message.Message):
     fileName: str
     def __init__(self, resource: _Optional[str] = ..., fileName: _Optional[str] = ...) -> None: ...
 
+class fileRequest(_message.Message):
+    __slots__ = ("urlCopy", "fileName", "partitionName", "content")
+    URLCOPY_FIELD_NUMBER: _ClassVar[int]
+    FILENAME_FIELD_NUMBER: _ClassVar[int]
+    PARTITIONNAME_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    urlCopy: str
+    fileName: str
+    partitionName: str
+    content: bytes
+    def __init__(self, urlCopy: _Optional[str] = ..., fileName: _Optional[str] = ..., partitionName: _Optional[str] = ..., content: _Optional[bytes] = ...) -> None: ...
+
+class fileResponse(_message.Message):
+    __slots__ = ("status_code",)
+    STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+    status_code: int
+    def __init__(self, status_code: _Optional[int] = ...) -> None: ...
+
+class copyRequest(_message.Message):
+    __slots__ = ("fileName", "partitionName", "content")
+    FILENAME_FIELD_NUMBER: _ClassVar[int]
+    PARTITIONNAME_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    fileName: str
+    partitionName: str
+    content: bytes
+    def __init__(self, fileName: _Optional[str] = ..., partitionName: _Optional[str] = ..., content: _Optional[bytes] = ...) -> None: ...
+
+class copyResponse(_message.Message):
+    __slots__ = ("status_code",)
+    STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+    status_code: int
+    def __init__(self, status_code: _Optional[int] = ...) -> None: ...
+
 class ResponseSimple(_message.Message):
     __slots__ = ("status_code", "response")
     STATUS_CODE_FIELD_NUMBER: _ClassVar[int]

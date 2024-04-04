@@ -73,8 +73,10 @@ def lookForDeaths():
                 deathNodes.append(node)
             else:
                 print("node: "+node+" is alive")
-            for node in deathNodes:            dbData["dataNodes"].pop(node)
-            if(len(deathNodes)):            updateDB(dbData)
+            for node in deathNodes:            
+                dbData["dataNodes"].pop(node)
+            if(len(deathNodes)):            
+                updateDB(dbData)
             time.sleep(10)
 
 #-------------------------------------------------#
@@ -174,7 +176,44 @@ def create_file():
         nodeUrl = nodeInfo[0]
         urlsDataNodesCopy.append(nodeUrl)
 
-    return jsonify({ 'urlsDataNodesPrincipal': urlsDataNodesPrincipal, 'urlsDatasNodeCopy': urlsDataNodesCopy }), 200
+    return jsonify({ 'urlsDataNodesPrincipal': urlsDataNodesPrincipal, 'urlsDataNodesCopy': urlsDataNodesCopy }), 200
+
+@app.route('/updateFilesDB', methods = ['POST'])
+def updateFilesDB():
+    postRequest = request.get_json()
+    urlPrincipal = postRequest.get("urlPrincipal")
+    partitionName = postRequest.get("partitionName")
+    fileName = postRequest.get("fileName")
+
+    dbData = readDB()
+
+    for node, (url, lastTime) in dbData["dataNodes"].items():
+        if url == urlPrincipal:
+            nodeId = node
+            break
+    
+    # Update files
+    if fileName in dbData["files"]:
+        if partitionName in dbData["files"][fileName]:
+            dbData["files"][fileName][partitionName].append(nodeId)
+        else:
+            dbData["files"][fileName][partitionName] = [nodeId]
+    else:
+        dbData["files"][fileName] = {partitionName: [nodeId]}
+
+    # Update dataNodeFiles 
+    if nodeId in dbData["dataNodeFiles"]:
+        if fileName in dbData["dataNodeFiles"][nodeId]:
+            dbData["dataNodeFiles"][nodeId][fileName].append(partitionName)
+        else:
+            dbData["dataNodeFiles"][nodeId][fileName] = [partitionName]
+    else:
+        dbData["dataNodeFiles"][nodeId] = {fileName: [partitionName]}
+
+    updateDB(dbData)
+    
+    return jsonify({"message": "Base de datos actualizada correctamente."}), 200
+
 
 if __name__ == '__main__':
     flag = True

@@ -1,9 +1,9 @@
-import json
 import os
+import time
+import json
+import requests
 from concurrent import futures
 from threading import Thread
-import requests
-import time
 
 import grpc
 import Service_pb2
@@ -28,6 +28,19 @@ class ProductService(Service_pb2_grpc.ProductServiceServicer):
         print('request: llegó el archivo correctamente', request.resource, request.fileName)
         dataToSend = getFile(request.fileName, request.resource)
         response = Service_pb2.ResponseSimple(status_code=200, response = dataToSend)
+        return response
+    
+    def sendFile(self, request, context):
+        print('request: llegó el archivo correctamente', request.urlCopy, request.fileName, request.partitionName, request.content)
+        saveFile(request.content, request.fileName, request.partitionName)
+        createCopy(request.urlCopy, request.content, request.fileName, request.partitionName)
+        response = Service_pb2.fileResponse(status_code=200)
+        return response
+    
+    def copyPart(self, request, context):
+        print('request: llegó el archivo correctamente')
+        saveFile(request.content, request.fileName, request.partitionName)
+        response = Service_pb2.fileResponse(status_code=200)
         return response
 
 def getFile(fileName, filePart):
@@ -64,6 +77,30 @@ def sendPing(serverURL):
     else:
         print("[*THREAD*] - Error while sending information:",response.json()["message"]," - code: ", response.status_code)
     
+def saveFile(content, fileName, partitionName):
+    partitionsPath = os.path.join("Partitions",fileName)
+    if not os.path.exists(partitionsPath):
+        os.mkdir(partitionsPath)
+    
+    partitionPath = os.path.join("Partitions", fileName, partitionName)
+
+    with open(partitionPath, 'ab') as f:
+        f.write(content)
+
+
+def createCopy(urlCopy, content, fileName, partitionName):
+    with grpc.insecure_channel(urlCopy) as channel:
+        stub = Service_pb2_grpc.ProductServiceStub(channel)
+        response = stub.copyPart(Service_pb2.copyRequest(content = content, fileName = fileName, partitionName = partitionName))
+        print((response.status_code))
+    
+    if response.status_code == 200:
+        url = SERVERURL + "/updateFilesDB"
+        body = json.dumps({ "urlPrincipal": urlCopy, "fileName": fileName, "partitionName": partitionName })
+        headers = {'Content-Type': 'application/json'}
+
+        responseNameNode = requests.post(url=url, data=body, headers=headers)
+        print(responseNameNode.status_code)
 
 def mainPing():
     global flag
