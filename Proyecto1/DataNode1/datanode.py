@@ -13,15 +13,43 @@ SERVERURL = "http://127.0.0.1:5000"
 
 class ProductService(Service_pb2_grpc.ProductServiceServicer):
     def read(self, request, context):
-        print('request: llegó el archivo correctamente', request.fileName)
-        response = Service_pb2.readResponse(status_code=200, response=b"Python server ClientSimpleMethod ok")
+        print('request: llegó el archivo correctamente', request.fileName, request.partName)
+        dataToSend = getFile(request.fileName, request.partName)
+        response = Service_pb2.readResponse(status_code=200, response=dataToSend)
         return response
 
     def write(self, request, context):
-        print('request: llegó el archivo correctamente', request.fileName, request.chunkUrl, request.data)
-        response = Service_pb2.ResponseSimple(status_code=200)
+        print('request: llegó el archivo correctamente', request.fileName, request.partName, request.data)
+        writeFile(request.fileName, request.partName, request.data)
+        response = Service_pb2.writeResponse(status_code=200)
         return response
     
+    def clientSingle(self, request, context):
+        print('request: llegó el archivo correctamente', request.resource, request.fileName)
+        dataToSend = getFile(request.fileName, request.resource)
+        response = Service_pb2.ResponseSimple(status_code=200, response = dataToSend)
+        return response
+
+def getFile(fileName, filePart):
+    filePath = 'files'
+    partsPath = os.path.join(filePath,fileName)
+    file = os.path.join(partsPath,filePart)
+    print(file)
+
+    with open(file, 'rb') as f:
+        fileData = f.read()
+        return(fileData)
+    
+def writeFile(fileName, filePart, data):
+    filePath = 'files'
+    partsPath = os.path.join(filePath,fileName)
+    file = os.path.join(partsPath,filePart)
+
+    with open(file, 'wb') as f:
+        print(data)
+        f.write(data)
+        f.close
+
 def sendPing(serverURL):
     global nodeNumber
     url = serverURL+"/ping"

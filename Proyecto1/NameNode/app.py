@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify
-import threading
 import time
 import json
 import random
+import threading
+from flask import Flask, request, jsonify
+
 app = Flask(__name__)
 
 BLOCKSIZE = 1024 # Bytes

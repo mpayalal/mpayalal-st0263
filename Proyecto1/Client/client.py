@@ -40,19 +40,94 @@ def create_file():
     print(responseBody)
 
     # Part the file and send it
+    partition(filePath, fileName, BLOCKSIZE)
 
-def read(metadata):
-    while(1):
-        mode = int(input('Select a mode: \n[1]. Read first chunk \n[2]. Read all file '))
-        fileName = list(metadata.keys())[0]
-        if mode == 1:
-            fileData = metadata[fileName]
-            firstChunkUrl = metadata[fileName][list(fileData.keys())[0]]
-            file = readOne(fileName, firstChunkUrl)
-            return file
-        elif mode == 2:
-            file = readAll(fileName, metadata)
-            return file
+def getPartitionNumber(partitionNumber):
+    partitionNumberStr = str(partitionNumber)
+
+    partition0s = partitionNumber/1000
+
+    if(partitionNumber//10000 > 0):
+        print("Partition number is greater than 4 digits")
+    else:
+        while(int(partition0s) == 0):
+            partitionNumberStr = "0" + partitionNumberStr
+            partition0s *= 10
+
+    return partitionNumberStr
+
+def createPartition(partitionNumber,fileName,content):
+
+    partitionName = "part-" + getPartitionNumber(partitionNumber)
+    partitionPath = os.path.join("Partitions", fileName, partitionName)
+    with open(partitionPath, 'ab') as f:
+        f.write(content)
+
+def partition(file, fileName, blockSize):
+    # set up
+    partitionNumber = 1
+    partitionsPath = os.path.join("Partitions",fileName)
+    os.mkdir(partitionsPath)
+
+    with open(file, 'rb') as f:
+        while True:
+            block = f.read(blockSize)
+
+            if not block:
+                break
+
+            createPartition(partitionNumber, fileName, block)
+            partitionNumber += 1
+
+#--------------------------------------------------------------#
+def read(metadata, mode):
+    mode = mode
+    fileName = list(metadata.keys())[0]
+    if mode == 1:
+        readSequential(fileName, metadata)
+    elif mode == 2:
+        readAll(fileName, metadata)
+    else:
+        error = """
+        ************************
+        ERROR: insert a valid number
+        ************************"""
+        print(error)
+
+def readOne(fileName, url, partName):
+    fileChunk = b''
+    with grpc.insecure_channel(url) as channel:
+        stub = Service_pb2_grpc.ProductServiceStub(channel)
+        print(partName)
+        response = stub.read(Service_pb2.readRequest(fileName = fileName, partName = partName))
+        fileChunk = response.response
+    return (fileChunk)
+
+def readSequential(fileName, metadata):
+    fileData = metadata[fileName]
+    listOfParts = list(fileData.keys())
+    partIndex = 0
+    while 1:
+        print(readOne(fileName, fileData[listOfParts[partIndex]], listOfParts[partIndex]))
+        action = int(input("""
+        Which part do you want to read:
+        [1]. next part
+        [2]. previous part
+        [0]. to exit
+        Insert the NUMBER and press enter: """))
+        if action == 1:
+            if partIndex == len(listOfParts)-1:
+                print('This is the last part')
+            else:
+                partIndex = partIndex + 1
+        elif action == 2:
+            if partIndex == 0:
+                print('This is the first part')
+            else:
+                partIndex = partIndex - 1
+        elif action == 0:
+            print('entra al break')
+            break
         else:
             error = """
             ************************
@@ -60,24 +135,73 @@ def read(metadata):
             ************************"""
             print(error)
 
-def readOne(fileName, url):
-    fileChunk = b''
-    with grpc.insecure_channel(url) as channel:
-        stub = Service_pb2_grpc.ProductServiceStub(channel)
-        response = stub.read(Service_pb2.readRequest(fileName = fileName))
-        fileChunk = response.response
-    return (fileChunk)
-
 def readAll(fileName, metadata):
     fileData = metadata 
     fileComplete = b''
     for file in fileData[fileName]:
-        with grpc.insecure_channel(fileData[fileName][file]) as channel:
-            stub = Service_pb2_grpc.ProductServiceStub(channel)
-            response = stub.read(Service_pb2.readRequest(fileName = fileName))
-            fileComplete = fileComplete + response.response
-    return fileComplete
-#--------------------------------------------------------------#    
+        response = readOne(fileName, fileData[fileName][file], file)
+        fileComplete = fileComplete + response
+    print(fileComplete)
+#--------------------------------------------------------------#
+def write(metadata):
+    BLOCKSIZE = 1024
+    indexOfTheChunk = -1
+    fileName = list(metadata.keys())[0]
+    fileData = metadata[fileName]
+    fileNumberOfParts = len(list(fileData.keys()))
+    filePartName = list(fileData.keys())[indexOfTheChunk]
+    lastChunkUrl = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+    with grpc.insecure_channel(lastChunkUrl) as channel:
+        stub = Service_pb2_grpc.ProductServiceStub(channel)
+        response = stub.clientSingle(Service_pb2.RequestSimple(resource = filePartName, fileName=fileName))
+        print(response.status_code)
+    
+    newText = bytes(input('Write what you want to add to the file\n'), 'utf-8')
+    textComplete = response.response + newText.decode('unicode-escape').encode('utf-8')
+    
+    print("longitud del testo:", len(textComplete))
+    
+    index = len(textComplete)//BLOCKSIZE
+    indexComplete = len(textComplete)/BLOCKSIZE
+    print(index, indexComplete)
+    i = 0
+    partNumber = getPartNumber(filePartName)
+    while i <= index:
+        if i == 0: 
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(lastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
+            partNumber = partNumber + 1
+            
+        elif index < indexComplete and i == index:
+            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(url, textComplete[i*BLOCKSIZE:], fileName, partName)
+            partNumber = partNumber + 1
+        else:
+            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+            partName = 'part-'+getPartitionNumber(partNumber)
+            grpcWrite(url, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
+            partNumber = partNumber + 1
+        i = i + 1
+
+def grpcWrite(url, data, fileName, partName):
+    with grpc.insecure_channel(url) as channel:
+                stub = Service_pb2_grpc.ProductServiceStub(channel)
+                response = stub.write(Service_pb2.writeRequest(fileName = fileName, data = data, partName = partName))
+                print((response.status_code))
+                
+def getPartNumber(partName):
+    number = int(partName[5:9])
+    return (number)
+
+def getIndexFromMetadata(index, listLength):
+    if index == listLength - 1 or index == -1:
+        return (0)
+    else:
+        return (index + 1)
+
 def ls():
     # Call NameNode to know which files are up in the system
     url = nameNode + "/ls"
@@ -138,15 +262,17 @@ def openFile():
             option = int(input(menu))
 
             fileData = {fileName:parts}
+            
+            print(fileData)
 
             if(option == 1):
-                #readByChunks(fileData)
+                read(fileData, option)
                 pass
             elif(option == 2):
-                #readAll(fileData)
+                read(fileData, option)
                 pass
             elif(option == 3):
-                #write(fileData) -> acá no se si pones todo el archivo o solo el último chunk
+                write(fileData)
                 pass
             else:
                 Error = """
@@ -160,7 +286,7 @@ def openFile():
             ERROR: insert a number
             ************************"""
             print(Error)
-
+            
 def display_menu():
     menu = """-------------------------------------
     What do you want to do:
@@ -197,7 +323,6 @@ def display_menu():
         ERROR: insert a number
         ************************"""
         print(Error)
-
 
 if __name__ == '__main__':
 

@@ -12,12 +12,13 @@ message Response{
 }
 
 message RequestSimple{
-    bytes resource = 3;
+    string resource = 3;
+    string fileName = 7;
 }
 
 message ResponseSimple{
     int32 status_code = 4;
-    string response = 3;
+    bytes response = 3;
 }
 
 message openRequest{
@@ -32,7 +33,7 @@ message openResponse{
 
 message readRequest{
     string fileName = 7;
-    string chunkUrl = 8;
+    string partName = 12;
 }
 
 message readResponse{
@@ -42,7 +43,7 @@ message readResponse{
 
 message writeRequest{
     string fileName = 11;
-    string chunkUrl = 12;
+    string partName = 12;
     bytes data = 13;
 }
 
