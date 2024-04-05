@@ -16,6 +16,16 @@ message RequestSimple{
     string fileName = 7;
 }
 
+message fileRequest{
+    string urlCopy = 1;
+    string partitionPath = 2;
+    bytes content = 3;
+}
+
+message fileResponse{
+    int32 status_code = 4;
+}
+
 message ResponseSimple{
     int32 status_code = 4;
     bytes response = 3;
@@ -57,4 +67,5 @@ service ProductService{
     rpc open(openRequest) returns (openResponse) {}
     rpc read(readRequest) returns (readResponse) {}
     rpc write(writeRequest) returns (writeResponse) {}
+    rpc sendFile(fileRequest) returns (fileResponse) {}
 }
