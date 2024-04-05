@@ -18,11 +18,22 @@ message RequestSimple{
 
 message fileRequest{
     string urlCopy = 1;
-    string partitionPath = 2;
-    bytes content = 3;
+    string fileName = 2;
+    string partitionName = 3;
+    bytes content = 4;
 }
 
 message fileResponse{
+    int32 status_code = 4;
+}
+
+message copyRequest{
+    string fileName = 1;
+    string partitionName = 2;
+    bytes content = 3;
+}
+
+message copyResponse{
     int32 status_code = 4;
 }
 
@@ -68,4 +79,5 @@ service ProductService{
     rpc read(readRequest) returns (readResponse) {}
     rpc write(writeRequest) returns (writeResponse) {}
     rpc sendFile(fileRequest) returns (fileResponse) {}
+    rpc copyPart(copyRequest) returns (copyResponse) {}
 }
