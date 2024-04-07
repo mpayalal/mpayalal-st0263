@@ -67,9 +67,7 @@ def getFile(fileName, filePart):
     print(file)
 
     with open(file, 'rb') as f:
-        print("en efecto es aca")
         fileData = f.read()
-        print("mueri")
         return(fileData)
     
 def writeFile(fileName, filePart, data):
@@ -136,6 +134,7 @@ def logIn(host):
 
     responseBody = response.json()
     nodeNumber = str(responseBody["index"])
+    return responseBody
 
 def serve():
     global flag
@@ -143,7 +142,7 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     Service_pb2_grpc.add_ProductServiceServicer_to_server(ProductService(), server)
 
-    logIn(HOST)
+    responseBody = logIn(HOST)
     server.add_insecure_port(HOST)
 
     print("Service is running... ")
@@ -152,6 +151,18 @@ def serve():
     pingThread.start()
 
     server.start()
+    
+    if("lonelyNodeId" in responseBody):
+        lonelyUrl = NAMENODE+"/copyLonelyNode"
+        lonelyNodeId = responseBody["lonelyNodeId"]
+        lonelyBody= json.dumps({"lonelyNodeId":lonelyNodeId,"actualNodeURL":HOST})
+        lonelyHeaders = {'Content-Type': 'application/json'}
+
+        lonelyResponse = requests.post(url=lonelyUrl,data=lonelyBody,headers=lonelyHeaders)
+
+        if(lonelyResponse.status_code == 202):
+            print("Files copied correctly")
+
     server.wait_for_termination()
     
     flag=False

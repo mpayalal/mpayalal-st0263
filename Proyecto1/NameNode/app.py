@@ -40,13 +40,50 @@ def logIn():
     dataNodeIndex += 1
     req = request.get_json()
     ip = req.get("ip")
+    firstCopyFlag = False
     
     dbData = readDB()
+    actualNodes = dbData["dataNodes"]
+    #check to make a copy
+    if(len(actualNodes) == 1):
+        lonelyNodeId = next(iter(actualNodes))
+        firstCopyFlag = True
+    #log-in
     dbData["dataNodes"][dataNodeIndex] = [ip,time.time()]
     dbData["dataNodeFiles"][dataNodeIndex] = {}
     updateDB(dbData)
-        
-    return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex}),202
+
+    if(firstCopyFlag):
+        return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex, "lonelyNodeId":lonelyNodeId}),202
+    else:
+        return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex}),202
+
+@app.route('/copyLonelyNode', methods=['POST'])
+def copyLonelyNode():
+    req = request.get_json()
+    lonelyNodeId = req.get("lonelyNodeId")
+    actualNodeURL = req.get("actualNodeURL")
+    dbData=readDB()
+    actualNodes = dbData["dataNodes"]
+
+    #get the files that the other node has
+    lonelyFiles = dbData["dataNodeFiles"][lonelyNodeId]
+    print(lonelyFiles,"\n\n\n")
+    #make a copy for each file 
+    lonelyNodeURL = actualNodes[lonelyNodeId][0]
+    print(lonelyNodeURL,"\n\n\n")
+
+    for fileName in lonelyFiles:
+        for partName in lonelyFiles[fileName]:
+            print(actualNodeURL,"\n\n\n")
+            print(fileName,"\n\n\n")
+            print(partName,"\n\n\n")
+            with grpc.insecure_channel(lonelyNodeURL) as channel:
+                stub = Service_pb2_grpc.ProductServiceStub(channel)
+                response = stub.distributeFiles(Service_pb2.distributeFilesRequest(urlCopy = actualNodeURL, fileName = fileName, partitionName = partName))
+                print(response.status_code)
+
+    return jsonify({'message':'logged COMPLETED: '+str(dataNodeIndex)}),202
 
 @app.route('/ping', methods=['POST'])
 def pong():
@@ -245,8 +282,7 @@ def updateFilesDB():
         dbData["dataNodeFiles"][nodeId] = {fileName: [partitionName]}
 
     updateDB(dbData)
-    
-    return jsonify({"message": "Base de datos actualizada correctamente."}), 200
+    return jsonify({"message": "Data Base correctly updated"}), 200
 #-------------------------------------------------#
 def keepAliveNodes(dataNodeFiles, deathNodes):
     for node in deathNodes:
