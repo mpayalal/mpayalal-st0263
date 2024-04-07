@@ -1,15 +1,21 @@
-import os
-import time
-import json
-import requests
 from concurrent import futures
 from threading import Thread
-
-import grpc
-import Service_pb2
+from dotenv import dotenv_values
 import Service_pb2_grpc
+import Service_pb2
+import requests
+import time
+import json
+import grpc
+import os
 
-SERVERURL = "http://127.0.0.1:5000"
+# Get .env variables
+env_vars = dotenv_values(".env")
+
+# Access variables
+NAMENODE = env_vars.get("NAMENODE")
+DIRECTORY = env_vars.get("DIRECTORY")
+HOST = env_vars.get("HOST")
 
 class ProductService(Service_pb2_grpc.ProductServiceServicer):
     def read(self, request, context):
@@ -44,7 +50,7 @@ class ProductService(Service_pb2_grpc.ProductServiceServicer):
         return response
 
 def getFile(fileName, filePart):
-    filePath = 'files'
+    filePath = DIRECTORY
     partsPath = os.path.join(filePath,fileName)
     file = os.path.join(partsPath,filePart)
     print(file)
@@ -54,7 +60,7 @@ def getFile(fileName, filePart):
         return(fileData)
     
 def writeFile(fileName, filePart, data):
-    filePath = 'files'
+    filePath = DIRECTORY
     partsPath = os.path.join(filePath,fileName)
     file = os.path.join(partsPath,filePart)
 
@@ -63,9 +69,9 @@ def writeFile(fileName, filePart, data):
         f.write(data)
         f.close
 
-def sendPing(serverURL):
+def sendPing(nameNodeURL):
     global nodeNumber
-    url = serverURL+"/ping"
+    url = nameNodeURL+"/ping"
     body= json.dumps({"nodeNumber":nodeNumber})
     headers = {'Content-Type': 'application/json'}
 
@@ -78,11 +84,11 @@ def sendPing(serverURL):
         print("[*THREAD*] - Error while sending information:",response.json()["message"]," - code: ", response.status_code)
     
 def saveFile(content, fileName, partitionName):
-    partitionsPath = os.path.join("Partitions",fileName)
+    partitionsPath = os.path.join(DIRECTORY,fileName)
     if not os.path.exists(partitionsPath):
         os.mkdir(partitionsPath)
     
-    partitionPath = os.path.join("Partitions", fileName, partitionName)
+    partitionPath = os.path.join(DIRECTORY, fileName, partitionName)
 
     with open(partitionPath, 'ab') as f:
         f.write(content)
@@ -95,7 +101,7 @@ def createCopy(urlCopy, content, fileName, partitionName):
         print((response.status_code))
     
     if response.status_code == 200:
-        url = SERVERURL + "/updateFilesDB"
+        url = NAMENODE + "/updateFilesDB"
         body = json.dumps({ "urlPrincipal": urlCopy, "fileName": fileName, "partitionName": partitionName })
         headers = {'Content-Type': 'application/json'}
 
@@ -105,12 +111,12 @@ def createCopy(urlCopy, content, fileName, partitionName):
 def mainPing():
     global flag
     while(flag):
-        sendPing(SERVERURL)
+        sendPing(NAMENODE)
         time.sleep(5)
 
 def logIn(host):
     global nodeNumber
-    url = SERVERURL+"/log-in"
+    url = NAMENODE+"/log-in"
     body= json.dumps({"ip":host})
     headers = {'Content-Type': 'application/json'}
 
@@ -120,12 +126,13 @@ def logIn(host):
     nodeNumber = str(responseBody["index"])
 
 def serve():
+    global flag
+    
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     Service_pb2_grpc.add_ProductServiceServicer_to_server(ProductService(), server)
 
-    host = 'localhost:'+input("add the port:")
-    logIn(host)
-    server.add_insecure_port(host)
+    logIn(HOST)
+    server.add_insecure_port(HOST)
 
     print("Service is running... ")
 

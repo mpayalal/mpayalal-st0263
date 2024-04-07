@@ -1,14 +1,22 @@
+from flask import Flask, request, jsonify
+from dotenv import dotenv_values
+import threading
+import random
 import time
 import json
-import random
-import threading
-from flask import Flask, request, jsonify
 
+# Get .env variables
+env_vars = dotenv_values(".env")
+
+# Access variables
+BLOCKSIZE = int(env_vars.get("BLOCKSIZE"))
+PORT = int(env_vars.get("PORT"))
+TTL = int(env_vars.get("TTL"))
+
+#set global variables
 app = Flask(__name__)
-
-BLOCKSIZE = 1024 # Bytes
-
 dataNodeIndex = 0
+lock = threading.Lock()
 
 #-------------------------------------------------#
 def readDB():
@@ -17,10 +25,11 @@ def readDB():
     
     return dbData
 
-def updateDB(dbData:dict):
-    with open("DB.json", "w") as dataBase:
-        dbDataJson = json.dumps(dbData)
-        dataBase.write(dbDataJson)
+def updateDB(dbData:dict,lock=lock):
+    with lock:
+        with open("DB.json", "w") as dataBase:
+            dbDataJson = json.dumps(dbData)
+            dataBase.write(dbDataJson)
 #-------------------------------------------------#
 @app.route('/log-in', methods=['POST'])
 def logIn():
@@ -31,6 +40,7 @@ def logIn():
     
     dbData = readDB()
     dbData["dataNodes"][dataNodeIndex] = [ip,time.time()]
+    dbData["dataNodeFiles"][dataNodeIndex] = {}
     updateDB(dbData)
         
     return jsonify({'message':'logged: '+str(dataNodeIndex),'index':dataNodeIndex}),202
@@ -53,7 +63,6 @@ def pong():
 
 def lookForDeaths():
     global flag
-    TTL = 5
 
     while (flag):
         print("[*thread*]")
@@ -73,11 +82,14 @@ def lookForDeaths():
                 deathNodes.append(node)
             else:
                 print("node: "+node+" is alive")
-            for node in deathNodes:            
-                dbData["dataNodes"].pop(node)
-            if(len(deathNodes)):            
-                updateDB(dbData)
-            time.sleep(10)
+
+        for node in deathNodes:            
+            dbData["dataNodes"].pop(node)
+
+        if(len(deathNodes)):            
+            updateDB(dbData)
+
+        time.sleep(10)
 
 #-------------------------------------------------#
 @app.route('/ls', methods = ['GET'])
@@ -108,6 +120,21 @@ def getParts():
         return jsonify({'parts':parts}),200
     else:
         return jsonify({'parts':None}),404
+
+@app.route('/getCopyURL', methods = ['POST'])
+def getCopyURL():
+    dbData = readDB()
+
+    req = request.get_json()
+    fileName = req.get("fileName")
+    partName = req.get("partName")
+
+    partitionLocations = dbData["files"][fileName][partName]
+    copyNodeOwner = partitionLocations[-1]
+
+    copyURL = dbData["dataNodes"][copyNodeOwner][0]
+    
+    return jsonify({'URL':copyURL}),200
 #-------------------------------------------------#
 
 # Arrange the datanodes in descending order according to the amount of files they ha
@@ -121,6 +148,7 @@ def files_per_node(dataNodeFiles):
     sortedNodes = sorted(filesPerNode, key=filesPerNode.get)
 
     return sortedNodes
+
 
 # Function to find how many parts should be in each node
 def distribute_parts_to_nodes(sortedNodes, totalParts):
@@ -156,6 +184,10 @@ def create_file():
     dbData = readDB()
     dataNodeFiles = dbData["dataNodeFiles"]
     infoDataNodes =  dbData["dataNodes"]
+
+    if(len(infoDataNodes) < 2):
+        return jsonify({ 'message': "Not enough DataNodes to save the files"}), 500
+    
     sortedNodes = files_per_node(dataNodeFiles)
     partsDistribution = distribute_parts_to_nodes(sortedNodes, totalParts)
 
@@ -220,7 +252,7 @@ if __name__ == '__main__':
     lookForDeathsThread = threading.Thread(target=lookForDeaths)
     lookForDeathsThread.start()
 
-    app.run(debug=False, port=5000)
+    app.run(debug=False, port=PORT)
 
     flag = False
     lookForDeathsThread.join()  

@@ -1,13 +1,18 @@
-import os
+from dotenv import dotenv_values
+import Service_pb2_grpc
+import Service_pb2
+import requests
 import json
 import grpc
 import math
-import requests
-import Service_pb2
-import Service_pb2_grpc
+import os
 
-nameNode = "http://127.0.0.1:5000"
-BLOCKSIZE = 1024 # Bytes
+# Get .env variables
+env_vars = dotenv_values(".env")
+
+# Access variables
+BLOCKSIZE = int(env_vars.get("BLOCKSIZE"))
+NAMENODE = env_vars.get("NAMENODE")
 
 def create_file():
     filePath = input("Please enter the path of the file you want to upload: ")
@@ -22,11 +27,11 @@ def create_file():
         fileSize = len(file.read())
         fileName = os.path.basename(filePath)
         totalParts = math.ceil(fileSize/BLOCKSIZE)
-        print(f"File uploaded successfully.")
+        print(f"File upload in progress.")
         print(f"Name: {fileName}, Size: {fileSize} bytes")
     
     # Call NameNode to know the datanodes where to send the information
-    url = nameNode + "/createFile"
+    url = NAMENODE + "/createFile"
     body = json.dumps({ "fileName": fileName, "totalParts": totalParts })
     headers = {'Content-Type': 'application/json'}
 
@@ -37,10 +42,14 @@ def create_file():
         urlsDataNodesPrincipal = responseBody['urlsDataNodesPrincipal']
         urlsDataNodesCopy = responseBody['urlsDataNodesCopy']
     
-    print(responseBody)
+        print(responseBody)
 
-    # Part the file and send it
-    partition(filePath, fileName, BLOCKSIZE, urlsDataNodesPrincipal, urlsDataNodesCopy)
+        # Part the file and send it
+        partition(filePath, fileName, BLOCKSIZE, urlsDataNodesPrincipal, urlsDataNodesCopy)
+
+    elif response.status_code == 500:
+        responseBody = response.json()
+        print(responseBody['message'])
 
 def getPartitionNumber(partitionNumber):
     partitionNumberStr = str(partitionNumber)
@@ -65,7 +74,7 @@ def createPartition(partitionNumber,fileName,content, urlPrincipal, urlCopy):
         print((response.status_code))
     
     if response.status_code == 200:
-        url = nameNode + "/updateFilesDB"
+        url = NAMENODE + "/updateFilesDB"
         body = json.dumps({ "urlPrincipal": urlPrincipal, "fileName": fileName, "partitionName": partitionName })
         headers = {'Content-Type': 'application/json'}
 
@@ -151,9 +160,22 @@ def readAll(fileName, metadata):
         response = readOne(fileName, fileData[fileName][file], file)
         fileComplete = fileComplete + response
     print(fileComplete)
-#--------------------------------------------------------------#
+#--------------------------------------------------------------#    
+def getCopyLastChunkUrl(fileName,partName):
+    # Call NameNode to get the datanode that contains the copy chunk
+    url = NAMENODE + "/getCopyURL"
+    body = json.dumps({ "fileName": fileName, "partName":partName})
+    headers = {'Content-Type': 'application/json'}
+
+    response = requests.post(url=url, data=body, headers=headers)
+
+    if response.status_code == 200:
+        responseBody = response.json()
+        return responseBody['URL']
+    else:
+        return None
+    
 def write(metadata):
-    BLOCKSIZE = 1024
     indexOfTheChunk = -1
     fileName = list(metadata.keys())[0]
     fileData = metadata[fileName]
@@ -168,30 +190,41 @@ def write(metadata):
     newText = bytes(input('Write what you want to add to the file\n'), 'utf-8')
     textComplete = response.response + newText.decode('unicode-escape').encode('utf-8')
     
-    print("longitud del testo:", len(textComplete))
+    print("longitud del texto:", len(textComplete))
     
     index = len(textComplete)//BLOCKSIZE
     indexComplete = len(textComplete)/BLOCKSIZE
     print(index, indexComplete)
     i = 0
     partNumber = getPartNumber(filePartName)
+
+    copyLastChunkUrl = getCopyLastChunkUrl(fileName,filePartName)
+    if(copyLastChunkUrl == None):
+        print("There was a problem, aborting")
+        return
+    
     while i <= index:
         if i == 0: 
             partName = 'part-'+getPartitionNumber(partNumber)
             grpcWrite(lastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
+            grpcWrite(copyLastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
             partNumber = partNumber + 1
             
         elif index < indexComplete and i == index:
-            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
-            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
-            partName = 'part-'+getPartitionNumber(partNumber)
-            grpcWrite(url, textComplete[i*BLOCKSIZE:], fileName, partName)
+            for _ in range(2):
+                indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+                url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+                partName = 'part-'+getPartitionNumber(partNumber)
+                grpcWrite(url, textComplete[i*BLOCKSIZE:], fileName, partName)
+                #update DB
             partNumber = partNumber + 1
         else:
-            indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
-            url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
-            partName = 'part-'+getPartitionNumber(partNumber)
-            grpcWrite(url, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
+            for _ in range(2):
+                indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+                url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+                partName = 'part-'+getPartitionNumber(partNumber)
+                grpcWrite(url, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
+                #update DB
             partNumber = partNumber + 1
         i = i + 1
 
@@ -213,7 +246,7 @@ def getIndexFromMetadata(index, listLength):
 
 def ls():
     # Call NameNode to know which files are up in the system
-    url = nameNode + "/ls"
+    url = NAMENODE + "/ls"
 
     response = requests.get(url=url)
 
@@ -233,7 +266,7 @@ def ls():
         print("Something happened, status code: ",response.status_code)
 #--------------------------------------------------------------#    
 def getParts(fileName):
-    url = nameNode + "/getParts"
+    url = NAMENODE + "/getParts"
     body= json.dumps({"fileName":fileName})
     headers = {'Content-Type': 'application/json'}
 
@@ -301,8 +334,7 @@ def display_menu():
     What do you want to do:
     [0]. list files
     [1]. create a new file
-    [2]. read
-    [3]. open file
+    [2]. open file
 
     insert the NUMBER and press enter:"""
 
@@ -314,10 +346,6 @@ def display_menu():
         elif(option == 1):
             create_file()
         elif(option == 2):
-            data = '{"archivo.txt": {"chunk-1": "localhost:23333","chunk-2": "localhost:23334","chunk-3": "localhost:23334", "chunk-4": "localhost:23333"} }'
-            data = json.loads(data)
-            print(read(data))
-        elif(option == 3):
             openFile()
         else:
             Error = """
