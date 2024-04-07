@@ -72,6 +72,16 @@ message writeResponse{
     int32 status_code = 14;
 }
 
+message distributeFilesRequest{
+    string urlCopy = 1;
+    string fileName = 2;
+    string partitionName = 3;
+}
+
+message distributeFilesResponse{
+    int32 status_code = 4;
+}
+
 service ProductService{
     rpc clientStreaming(stream Request) returns (Response) {}
     rpc clientSingle(RequestSimple) returns (ResponseSimple) {}
@@ -80,4 +90,5 @@ service ProductService{
     rpc write(writeRequest) returns (writeResponse) {}
     rpc sendFile(fileRequest) returns (fileResponse) {}
     rpc copyPart(copyRequest) returns (copyResponse) {}
+    rpc distributeFiles(distributeFilesRequest) returns (distributeFilesResponse) {}
 }

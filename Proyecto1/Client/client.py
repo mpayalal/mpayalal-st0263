@@ -81,7 +81,7 @@ def createPartition(partitionNumber,fileName,content, urlPrincipal, urlCopy):
         responseNameNode = requests.post(url=url, data=body, headers=headers)
         print(responseNameNode.status_code)
 
-def createSinglePartition(partitionNumber,fileName,content, urlPrincipal, urlCopy):
+def createSinglePartition(partitionNumber,fileName,content, urlPrincipal):
     partitionName = "part-" + getPartitionNumber(partitionNumber)
 
     grpcWrite(urlPrincipal, content, fileName, partitionName)

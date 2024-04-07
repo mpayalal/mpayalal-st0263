@@ -1,7 +1,10 @@
 from flask import Flask, request, jsonify
 from dotenv import dotenv_values
+import Service_pb2_grpc
+import Service_pb2
 import threading
 import random
+import grpc
 import time
 import json
 
@@ -76,9 +79,7 @@ def lookForDeaths():
 
             if timeUntilLastRequest > TTL*3:
                 print("node: "+node+" is death")
-                    
-                #makeNewCopy(node)
-
+                #needs to make a copy
                 deathNodes.append(node)
             else:
                 print("node: "+node+" is alive")
@@ -89,8 +90,10 @@ def lookForDeaths():
         if(len(deathNodes)):            
             updateDB(dbData)
 
-        time.sleep(10)
+        for node in deathNodes:
+            makeNewCopy(node,deathNodes)
 
+        time.sleep(10)
 #-------------------------------------------------#
 @app.route('/ls', methods = ['GET'])
 def ls():
@@ -148,7 +151,6 @@ def files_per_node(dataNodeFiles):
     sortedNodes = sorted(filesPerNode, key=filesPerNode.get)
 
     return sortedNodes
-
 
 # Function to find how many parts should be in each node
 def distribute_parts_to_nodes(sortedNodes, totalParts):
@@ -245,7 +247,83 @@ def updateFilesDB():
     updateDB(dbData)
     
     return jsonify({"message": "Base de datos actualizada correctamente."}), 200
+#-------------------------------------------------#
+def keepAliveNodes(dataNodeFiles, deathNodes):
+    for node in deathNodes:
+        if(node in dataNodeFiles):
+            dataNodeFiles.pop(node)
 
+    return dataNodeFiles
+
+def makeNewCopy(nodeId,deathNodes):
+    dbData = readDB()
+    copyFlag = True
+    dataNodes = dbData["dataNodes"]
+    numberAliveNodes = len(dataNodes)
+
+    if(numberAliveNodes == 0):
+        print("no datanodes to keep save the files")
+        dbData = {"dataNodes": {}, "files": {}, "dataNodeFiles": {}}
+        updateDB(dbData)
+        return
+    
+    if(numberAliveNodes == 1):
+        print("not enough datanodes to keep save the files")
+        copyFlag = False
+
+    dataNodeFiles = dbData["dataNodeFiles"]
+    deathDataNodeFiles = dataNodeFiles[nodeId]
+    filesInDataNodes = dbData["files"]
+
+    if(copyFlag):
+        aliveDataNodeFiles = keepAliveNodes(dataNodeFiles,deathNodes)
+        sortedNodes = files_per_node(aliveDataNodeFiles)
+        indexSelectedNode = 0
+
+    for fileName in deathDataNodeFiles:
+        for partName in deathDataNodeFiles[fileName]:
+            #clear from db and get the owner URL  
+            filesInDataNodes[fileName][partName].remove(nodeId)
+            ownerId = filesInDataNodes[fileName][partName][0]
+            ownerURL = dataNodes[ownerId][0]
+
+            if(copyFlag):
+                #select the following node
+                selectedNodeId = sortedNodes[indexSelectedNode]
+                #check that is not the same owner
+                if(ownerId == selectedNodeId):
+                    #increase the index of the selected node (or restart)
+                    indexSelectedNode += 1
+                    if indexSelectedNode == numberAliveNodes:
+                        indexSelectedNode = 0
+
+                    selectedNodeId = sortedNodes[indexSelectedNode]
+                #send the order to copy the info
+                selectedNodeURL = dataNodes[selectedNodeId][0]
+                with grpc.insecure_channel(ownerURL) as channel:
+                    stub = Service_pb2_grpc.ProductServiceStub(channel)
+                    response = stub.distributeFiles(Service_pb2.distributeFilesRequest(urlCopy = selectedNodeURL, fileName = fileName, partitionName = partName))
+                    print(response.status_code)
+
+                    #update the DB
+                    if(response.status_code == 200):
+                        filesInDataNodes[fileName][partName].append(selectedNodeId)
+
+                        if fileName in aliveDataNodeFiles[selectedNodeId]:
+                            aliveDataNodeFiles[selectedNodeId][fileName].append(partName)
+                        else:
+                            aliveDataNodeFiles[selectedNodeId][fileName] = [partName,]
+
+                #increase the index of the selected node (or restart)
+                indexSelectedNode += 1
+                if indexSelectedNode == numberAliveNodes:
+                    indexSelectedNode = 0
+
+    dbData["dataNodeFiles"] = keepAliveNodes(dataNodeFiles,[nodeId,])
+    dbData["files"] = filesInDataNodes
+    updateDB(dbData)
+
+#-------------------------------------------------#
 
 if __name__ == '__main__':
     flag = True

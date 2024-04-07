@@ -115,3 +115,19 @@ class writeResponse(_message.Message):
     STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
     status_code: int
     def __init__(self, status_code: _Optional[int] = ...) -> None: ...
+
+class distributeFilesRequest(_message.Message):
+    __slots__ = ("urlCopy", "fileName", "partitionName")
+    URLCOPY_FIELD_NUMBER: _ClassVar[int]
+    FILENAME_FIELD_NUMBER: _ClassVar[int]
+    PARTITIONNAME_FIELD_NUMBER: _ClassVar[int]
+    urlCopy: str
+    fileName: str
+    partitionName: str
+    def __init__(self, urlCopy: _Optional[str] = ..., fileName: _Optional[str] = ..., partitionName: _Optional[str] = ...) -> None: ...
+
+class distributeFilesResponse(_message.Message):
+    __slots__ = ("status_code",)
+    STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+    status_code: int
+    def __init__(self, status_code: _Optional[int] = ...) -> None: ...

@@ -48,6 +48,17 @@ class ProductService(Service_pb2_grpc.ProductServiceServicer):
         saveFile(request.content, request.fileName, request.partitionName)
         response = Service_pb2.fileResponse(status_code=200)
         return response
+    
+    def distributeFiles(self, request, context):
+        print('request: se hará la redistribición del archivo')
+        
+        #obtenermos el arcivo/part
+        partitionContent = getFile(request.fileName,request.partitionName)
+        #enviamos el contenido a la url a copiar
+        createCopy(request.urlCopy,partitionContent,request.fileName,request.partitionName)
+
+        response = Service_pb2.distributeFilesResponse(status_code=200)
+        return response
 
 def getFile(fileName, filePart):
     filePath = DIRECTORY
@@ -56,7 +67,9 @@ def getFile(fileName, filePart):
     print(file)
 
     with open(file, 'rb') as f:
+        print("en efecto es aca")
         fileData = f.read()
+        print("mueri")
         return(fileData)
     
 def writeFile(fileName, filePart, data):
@@ -92,7 +105,6 @@ def saveFile(content, fileName, partitionName):
 
     with open(partitionPath, 'ab') as f:
         f.write(content)
-
 
 def createCopy(urlCopy, content, fileName, partitionName):
     with grpc.insecure_channel(urlCopy) as channel:
