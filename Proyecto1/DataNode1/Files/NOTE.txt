@@ -1,0 +1,3 @@
+THIS FOLDER IS MANDATORY, ACCORDING TO THE .env.example file
+
+if you want to delete this, change the DIRECTORY constant
