@@ -192,19 +192,23 @@ def saveWrittenPartitions(indexOfTheChunk,metadata,fileName,fileData,fileNumberO
     indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
     url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
     urls.append(url)
+    singleFlag = True
 
-    while True:
+    steps = fileNumberOfParts
+    while steps > 0:
         indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
         url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
         
         if(urls[0] != url): #to search for a different node
             urls.append(url)
             createPartition(partNumber,fileName,content,urls[0],urls[1])
+            singleFlag = False
             break
 
-        if(indexOfTheChunk == 0): #if there are no more nodes
-            createSinglePartition(partNumber,fileName,content,url)
-            break
+        steps -= 1 
+        
+    if(singleFlag): #if there are no more nodes
+        createSinglePartition(partNumber,fileName,content,url)
 
     return indexOfTheChunk
 

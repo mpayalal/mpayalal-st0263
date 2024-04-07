@@ -266,7 +266,11 @@ def updateFilesDB():
     # Update files
     if fileName in dbData["files"]:
         if partitionName in dbData["files"][fileName]:
-            dbData["files"][fileName][partitionName].append(nodeId)
+            FirstOrLast = random.randint(0,1)
+            if(FirstOrLast):
+                dbData["files"][fileName][partitionName].append(nodeId)
+            else:
+                dbData["files"][fileName][partitionName].insert(0,nodeId)
         else:
             dbData["files"][fileName][partitionName] = [nodeId]
     else:
@@ -275,7 +279,12 @@ def updateFilesDB():
     # Update dataNodeFiles 
     if nodeId in dbData["dataNodeFiles"]:
         if fileName in dbData["dataNodeFiles"][nodeId]:
-            dbData["dataNodeFiles"][nodeId][fileName].append(partitionName)
+            FirstOrLast = random.randint(0,1)
+            if(FirstOrLast):
+                dbData["dataNodeFiles"][nodeId][fileName].append(partitionName)
+            else:
+                dbData["dataNodeFiles"][nodeId][fileName].insert(0,partitionName)
+
         else:
             dbData["dataNodeFiles"][nodeId][fileName] = [partitionName]
     else:
