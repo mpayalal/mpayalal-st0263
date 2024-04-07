@@ -81,6 +81,17 @@ def createPartition(partitionNumber,fileName,content, urlPrincipal, urlCopy):
         responseNameNode = requests.post(url=url, data=body, headers=headers)
         print(responseNameNode.status_code)
 
+def createSinglePartition(partitionNumber,fileName,content, urlPrincipal, urlCopy):
+    partitionName = "part-" + getPartitionNumber(partitionNumber)
+
+    grpcWrite(urlPrincipal, content, fileName, partitionName)
+    
+    url = NAMENODE + "/updateFilesDB"
+    body = json.dumps({ "urlPrincipal": urlPrincipal, "fileName": fileName, "partitionName": partitionName })
+    headers = {'Content-Type': 'application/json'}
+
+    responseNameNode = requests.post(url=url, data=body, headers=headers)
+    print(responseNameNode.status_code)
 
 def partition(file, fileName, blockSize, urlsDataNodesPrincipal, urlsDataNodesCopy):
     partitionNumber = 1
@@ -174,7 +185,29 @@ def getCopyLastChunkUrl(fileName,partName):
         return responseBody['URL']
     else:
         return None
-    
+
+def saveWrittenPartitions(indexOfTheChunk,metadata,fileName,fileData,fileNumberOfParts,partNumber,content):
+    urls = []
+
+    indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+    url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+    urls.append(url)
+
+    while True:
+        indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
+        url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+        
+        if(urls[0] != url): #to search for a different node
+            urls.append(url)
+            createPartition(partNumber,fileName,content,urls[0],urls[1])
+            break
+
+        if(indexOfTheChunk == 0): #if there are no more nodes
+            createSinglePartition(partNumber,fileName,content,url)
+            break
+
+    return indexOfTheChunk
+
 def write(metadata):
     indexOfTheChunk = -1
     fileName = list(metadata.keys())[0]
@@ -182,6 +215,7 @@ def write(metadata):
     fileNumberOfParts = len(list(fileData.keys()))
     filePartName = list(fileData.keys())[indexOfTheChunk]
     lastChunkUrl = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
+
     with grpc.insecure_channel(lastChunkUrl) as channel:
         stub = Service_pb2_grpc.ProductServiceStub(channel)
         response = stub.clientSingle(Service_pb2.RequestSimple(resource = filePartName, fileName=fileName))
@@ -204,28 +238,17 @@ def write(metadata):
         return
     
     while i <= index:
+
         if i == 0: 
             partName = 'part-'+getPartitionNumber(partNumber)
             grpcWrite(lastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
             grpcWrite(copyLastChunkUrl, textComplete[0:(i+1)*BLOCKSIZE], fileName, partName)
-            partNumber = partNumber + 1
-            
         elif index < indexComplete and i == index:
-            for _ in range(2):
-                indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
-                url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
-                partName = 'part-'+getPartitionNumber(partNumber)
-                grpcWrite(url, textComplete[i*BLOCKSIZE:], fileName, partName)
-                #update DB
-            partNumber = partNumber + 1
+            indexOfTheChunk = saveWrittenPartitions(indexOfTheChunk,metadata,fileName,fileData,fileNumberOfParts,partNumber,textComplete[i*BLOCKSIZE:])
         else:
-            for _ in range(2):
-                indexOfTheChunk = getIndexFromMetadata(indexOfTheChunk, fileNumberOfParts)
-                url = metadata[fileName][list(fileData.keys())[indexOfTheChunk]]
-                partName = 'part-'+getPartitionNumber(partNumber)
-                grpcWrite(url, textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE], fileName, partName)
-                #update DB
-            partNumber = partNumber + 1
+            indexOfTheChunk = saveWrittenPartitions(indexOfTheChunk,metadata,fileName,fileData,fileNumberOfParts,partNumber,textComplete[i*BLOCKSIZE:(i+1)*BLOCKSIZE])
+
+        partNumber = partNumber + 1
         i = i + 1
 
 def grpcWrite(url, data, fileName, partName):
