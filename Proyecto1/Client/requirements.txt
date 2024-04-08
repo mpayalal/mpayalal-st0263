@@ -1,0 +1,4 @@
+requests
+grpcio
+grpcio-tools
+python-dotenv
