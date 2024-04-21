@@ -28,7 +28,7 @@ cd st0263-241/docker-nginx-wordpress-ssl-letsencrypt/
 Copiamos el archivo que queremos construir con docker a la carpeta principal del usuario ubuntu:
 
 ```shell
-sudo cp docker-compose-solo-wordpress.yml /home/ubuntu/wordpress
+sudo cp docker-compose-solo-wordpress-db.yml /home/ubuntu/wordpress
 ```
 
 Debemos regresar a la carpeta principal del usuario ubuntu donde se encuentra wordpress. Si te encuentras en el paso aterior es escribir 'cd ..\..'.
