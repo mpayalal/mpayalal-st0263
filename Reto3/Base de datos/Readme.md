@@ -1,89 +1,47 @@
-# Configuración del NFS
-## Servidor
+# Configuración de la base de datos
+## Configuraciones generales 
 Debemos crear nuesta máquina virtual, en este caso una EC2 t2.micro, Ubuntu 22.04. 
 
-Una vez inicializada dicha máquina nos procedemos a actualizar los paquetes y a instalar el NFS para el servidor usando los siguientes comandos en consola:
+Una vez inicializada dicha máquina nos procedemos a actualizar los paquetes y a instalar docker y docker compose usando los siguientes comandos en consola:
 
 ```shell
-sudo apt update
-sudo apt install nfs-kernel-server -y
+sudo apt-get update
+sudo apt install docker.io -y
+sudo apt install docker-compose -y
 ```
 
-Creamos el directorio que vamos a compartir, en este caso:
+Permitimos a la máquina el comenzar docker automaticamente y agregar el usuario ubuntu al grupo de docker con los siguientes comandos:
 
 ```shell
-sudo mkdir /var/nfs/toShare1 -p
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -a -G docker ubuntu
 ```
 
-Cambiamos el propietario y los permisos del directorio que vamos a compartir:
+Clonamos el repositorio donde están los archivos y nos ponemos en la carpeta donde están los archivos yml:
 
 ```shell
-sudo chown nobody:nogroup /var/nfs/toShare1
-sudo chmod 777 /var/nfs/toShare1
+git clone https://github.com/st0263eafit/st0263-241.git
+cd st0263-241/docker-nginx-wordpress-ssl-letsencrypt/
 ```
 
-Luego ajustamos los archivos de configuración exports:
+Copiamos el archivo que queremos construir con docker a la carpeta principal del usuario ubuntu:
 
 ```shell
-sudo nano /etc/exports
+sudo cp docker-compose-solo-wordpress.yml /home/ubuntu/wordpress
 ```
 
-Allí agregamos la siguiente configuración (vale aclarar que debería ir en lugar del * la ip de la máquina que lo montaría posteriormente, sin embargo para evitar estar cambiando la configuración mientras tumbabamos máquinas y creabamos otras, decidimos dejarlo así para efectos del proyecto);
-
-```nano
-/var/nfs/toShare1 *(rw,sync,no_subtree_check)
-```
-
-Reiniciamos el servicio NFS y verificamos que esté activo
+Debemos regresar a la carpeta principal del usuario ubuntu donde se encuentra wordpress. Si te encuentras en el paso aterior es escribir 'cd ..\..'.
+Luego debemos entrar a modificar el archivo wordpress y cambiarle el nombre a docker-compose.yml:
 
 ```shell
-sudo systemctl restart nfs-kernel-server
-sudo systemctl status nfs-kernel-server
+sudo nano wordpress
 ```
 
-Finalmente habilitamos el FireWall
+construimos el contenedor de docker usando el siguiente comando
 
 ```shell
-sudo ufw enable
-sudo ufw allow nfs
+sudo docker-compose up --build -d
 ```
 
-> Con esto ya debería ser suficiente para dejar expuesto el directorio /var/nfs/toShare1 para consumo de un cliente NFS
-
-## Cliente 
-Debemos crear nuesta máquina virtual, en este caso una EC2 t2.micro, Ubuntu 22.04. 
-
-Una vez inicializada dicha máquina nos procedemos a actualizar los paquetes y a instalar el NFS para el cliente usando los siguientes comandos en consola:
-
-```shell
-sudo apt update
-sudo apt install nfs-common -y
-```
-
-Creamos el directorio donde vamos a montar el directorio compartido, en este caso:
-
-```shell
-sudo mkdir /nfs/wordpress -p
-```
-
-Una vez se tenga esto, montamos el directorio compartido del servidor NFS con el siguiente comando, para este caso:
-
-```shell
-sudo mount [ip-privada-server]:/var/nfs/toShare1 /nfs/wordpress
-```
-
->donde reemplazamos [ip-privada-server] por la ip privada de la máquina que hostea el NFS
-
-posterior a esto podremos verificar que quedó montado nuestro directorio al usar el comando
-
-```shell
-df -h
-```
-
->Si luego de todo esto no funciona el montaje del directorio, se recomienda revisar las reglas del grupo de seguridad. 
-
-Y listo, una vez finalizado este proceso en ambas máquinas que correrán el wordpress ya se puede crear un wordpress que comparta el directorio /var/nfs/toShare1 del server NFS a través del directorio local /nfs/wordpress
-
-# Referencias
-- Boucheron, B. (2020, 11 junio). Cómo configurar NFS Mount en Ubuntu 20.04. DigitalOcean. https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-20-04-es
-- Akamai Developer. (2023, 15 marzo). How to Install and Configure an NFS Linux Server and Client [Vídeo]. YouTube. https://www.youtube.com/watch?v=zmDIfJtCKCk
+### Listo, tienes tu base de datos corriendo
