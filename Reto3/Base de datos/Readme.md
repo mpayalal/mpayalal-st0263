@@ -31,7 +31,7 @@ Copiamos el archivo que queremos construir con docker a la carpeta principal del
 sudo cp docker-compose-solo-wordpress-db.yml /home/ubuntu/wordpress
 ```
 
-Debemos regresar a la carpeta principal del usuario ubuntu donde se encuentra wordpress. Si te encuentras en el paso aterior es escribir 'cd ..\..'.
+Debemos regresar a la carpeta principal del usuario ubuntu donde se encuentra wordpress. Si te encuentras en el paso aterior es escribir 'cd ../..'.
 Luego debemos entrar a modificar el archivo wordpress y cambiarle el nombre a docker-compose.yml:
 
 ```shell
