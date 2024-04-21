@@ -43,5 +43,11 @@ construimos el contenedor de docker usando el siguiente comando
 ```shell
 sudo docker-compose up --build -d
 ```
-
+# Referencias
+- Linux post-installation steps for Docker Engine.
+  https://docs.docker.com/engine/install/linux-postinstall/
+- How To Use Systemctl to Manage Systemd Services and Units
+  https://www.digitalocean.com/community/tutorials/how-to-use-systemctl-to-manage-systemd-services-and-units
+- https://github.com/st0263eafit/st0263-241/tree/main
+  
 ### ¡¡Listo, tienes tus instamcias de wordpress corriendo!!
