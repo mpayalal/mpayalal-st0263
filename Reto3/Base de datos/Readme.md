@@ -44,4 +44,4 @@ construimos el contenedor de docker usando el siguiente comando
 sudo docker-compose up --build -d
 ```
 
-### Listo, tienes tu base de datos corriendo
+### ¡¡Listo, tienes tu base de datos corriendo!!
