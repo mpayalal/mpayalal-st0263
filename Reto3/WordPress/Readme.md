@@ -1,4 +1,4 @@
-# Configuración de la base de datos
+# Configuración de la instancia wordpress
 ## Configuraciones generales 
 Debemos crear 2 máquinas virtuales, en este caso una EC2 t2.micro, Ubuntu 22.04. 
 
