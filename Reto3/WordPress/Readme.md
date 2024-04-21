@@ -44,4 +44,4 @@ construimos el contenedor de docker usando el siguiente comando
 sudo docker-compose up --build -d
 ```
 
-### Listo, tienes tus instamcias de wordpress corriendo
+### ¡¡Listo, tienes tus instamcias de wordpress corriendo!!
