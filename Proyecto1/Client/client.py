@@ -14,7 +14,7 @@ env_vars = dotenv_values(".env")
 BLOCKSIZE = int(env_vars.get("BLOCKSIZE"))
 NAMENODE = env_vars.get("NAMENODE")
 
-def create_file():
+def createFile():
     filePath = input("Please enter the path of the file you want to upload: ")
 
     # Check if the file exists
@@ -356,7 +356,7 @@ def openFile():
             ************************"""
             print(Error)
             
-def display_menu():
+def displayMenu():
     menu = """-------------------------------------
     What do you want to do:
     [0]. list files
@@ -371,7 +371,7 @@ def display_menu():
         if(option == 0):
             ls()
         elif(option == 1):
-            create_file()
+            createFile()
         elif(option == 2):
             openFile()
         else:
@@ -391,4 +391,4 @@ def display_menu():
 if __name__ == '__main__':
 
     while(True):
-        display_menu()
+        displayMenu()

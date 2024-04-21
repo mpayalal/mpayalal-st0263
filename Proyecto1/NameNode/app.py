@@ -177,8 +177,8 @@ def getCopyURL():
     return jsonify({'URL':copyURL}),200
 #-------------------------------------------------#
 
-# Arrange the datanodes in descending order according to the amount of files they ha
-def files_per_node(dataNodeFiles):
+# Arrange the datanodes in descending order according to the amount of files they have
+def filesPerNode(dataNodeFiles):
     filesPerNode = {}
     for node, files in dataNodeFiles.items():
         totalFiles = sum(len(parts) for parts in files.values())
@@ -190,7 +190,7 @@ def files_per_node(dataNodeFiles):
     return sortedNodes
 
 # Function to find how many parts should be in each node
-def distribute_parts_to_nodes(sortedNodes, totalParts):
+def distributePartsToNodes(sortedNodes, totalParts):
     totalNodes = len(sortedNodes)
     partsPerNode = totalParts // totalNodes
     remainder = totalParts % totalNodes
@@ -202,7 +202,7 @@ def distribute_parts_to_nodes(sortedNodes, totalParts):
     return partsDistribution
 
 # Function to choose randomly where the copy of the files will be saved
-def choose_random_nodes(partsDistribution, sortedNodes):
+def chooseRandomNodes(partsDistribution, sortedNodes):
     dataNodesCopy = []
     for node, parts in partsDistribution.items():
         if parts > 0:
@@ -213,7 +213,7 @@ def choose_random_nodes(partsDistribution, sortedNodes):
     return dataNodesCopy
 
 @app.route('/createFile', methods = ['POST'])
-def create_file():
+def createFile():
 
     # From the information sent, check how many parts are needed
     postRequest = request.get_json()
@@ -227,8 +227,8 @@ def create_file():
     if(len(infoDataNodes) < 2):
         return jsonify({ 'message': "Not enough DataNodes to save the files"}), 500
     
-    sortedNodes = files_per_node(dataNodeFiles)
-    partsDistribution = distribute_parts_to_nodes(sortedNodes, totalParts)
+    sortedNodes = filesPerNode(dataNodeFiles)
+    partsDistribution = distributePartsToNodes(sortedNodes, totalParts)
 
     urlsDataNodesPrincipal = []
     urlsDataNodesCopy = []
@@ -240,7 +240,7 @@ def create_file():
         urlsDataNodesPrincipal.extend([nodeUrl] * parts)
     
     # Randomly select where each copy will be saved
-    dataNodesCopy = choose_random_nodes(partsDistribution, sortedNodes)
+    dataNodesCopy = chooseRandomNodes(partsDistribution, sortedNodes)
 
     for i in range(len(dataNodesCopy)):
         nodeInfo = infoDataNodes[dataNodesCopy[i]]
@@ -322,7 +322,7 @@ def makeNewCopy(nodeId,deathNodes):
 
     if(copyFlag):
         aliveDataNodeFiles = keepAliveNodes(dataNodeFiles,deathNodes)
-        sortedNodes = files_per_node(aliveDataNodeFiles)
+        sortedNodes = filesPerNode(aliveDataNodeFiles)
         indexSelectedNode = 0
 
     for fileName in deathDataNodeFiles:

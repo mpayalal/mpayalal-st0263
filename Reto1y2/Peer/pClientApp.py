@@ -135,8 +135,6 @@ def logout():
     else:
         print("Error while sending information:"+ str(response.status_code) + ". Try again")
 
-
-
 def display_menu():
     menu = """-------------------------------------
     What do you want to do:
