@@ -8,7 +8,7 @@
 - Camilo Palacio Restrepo - cpalacior@efit.edu.co
   
 <br>**Título:** Aplicación Monolítica con Balanceo y Datos Distribuidos (BD y archivos)
-<br>**Objetivo:** Implementar un CMS empleando la tecnología de contenedores, con su propio dominio y certificado SSL. <br>**Sustentación:** https://www.youtube.com/watch?v=gFXGwRU0Yyk
+<br>**Objetivo:** Implementar un CMS empleando la tecnología de contenedores, con su propio dominio y certificado SSL. <br>**Sustentación:** https://www.youtube.com/watch?v=UZ7cgyIR71Q
 
 ## 1. Descripción de la actividad
 #### 1.1. Aspectos cumplidos:
