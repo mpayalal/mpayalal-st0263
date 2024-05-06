@@ -75,7 +75,7 @@ cp /etc/letsencrypt/live/nuestrodominio.com/* /home/ubuntu/loadbalancer/ssl
 nano loadbalancer/nginx.conf
 ```
 
-En este se copia el archivo [ngnix.conf]() que se encuentra en este repositorio, cambiando donde dice <wordpress_ip1> y <wordpress_ip2> por las IPs privadas de cada instancia creada anteriormente.
+En este se copia el archivo [ngnix.conf](https://github.com/mpayalal/mpayalal-st0263/blob/main/Reto3/Balanceador%20de%20cargas/ngnix.conf) que se encuentra en este repositorio, cambiando donde dice <wordpress_ip1> y <wordpress_ip2> por las IPs privadas de cada instancia creada anteriormente.
 
 7. Creamos el archivo de configuración SSL
 
@@ -83,7 +83,7 @@ En este se copia el archivo [ngnix.conf]() que se encuentra en este repositorio,
 nano loadbalancer/ssl.conf
 ```
 
-En este se copia el archivo [ngnix.conf]() que se encuentra en este repositorio, no se debe cambiar ninguna información de este.
+En este se copia el archivo [ssl.conf](https://github.com/mpayalal/mpayalal-st0263/blob/main/Reto3/Balanceador%20de%20cargas/ssl.conf) que se encuentra en este repositorio, no se debe cambiar ninguna información de este.
 
 8. Creamos el archivo docker compose
 
@@ -91,7 +91,7 @@ En este se copia el archivo [ngnix.conf]() que se encuentra en este repositorio,
 nano loadbalancer/docker-compose.yml
 ```
 
-En este se copia el archivo [docker-compose.yml]() que se encuentra en este repositorio, no se debe cambiar ninguna información de este.
+En este se copia el archivo [docker-compose.yml](https://github.com/mpayalal/mpayalal-st0263/blob/main/Reto3/Balanceador%20de%20cargas/docker-compose.yml) que se encuentra en este repositorio, no se debe cambiar ninguna información de este.
 
 9. Detenemos los procesos de Ngnix
 
