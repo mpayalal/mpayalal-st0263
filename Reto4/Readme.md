@@ -9,3 +9,269 @@
   
 <br>**Título:** Kubernetes
 <br>**Objetivo:** Desplegar la misma aplicación del Reto 3 en un cluster de alta disponibilidad en Kubernetes.<br>**Sustentación:** https://www.youtube.com/watch?v=UZ7cgyIR71Q
+
+
+## 1. Descripción de la actividad
+#### 1.1. Aspectos cumplidos:
+
+- Wordpress desplegado en Kubernetes
+- Crear nuestro propio dominio (reto4.miguapamundi.tech)
+- Balanceador de cargas de Kubernetes
+- Dos pods de Wordpress
+- Una base de datos MySQL en GCP
+
+#### 1.2. Aspectos no desarrollados:
+
+- Certificado SSL
+- Un servidor NFS para los archivos, este lo intentamos realizar siguiendo el [tutorial que provee Google](https://cloud.google.com/filestore/docs/csi-driver?hl=es-419#deployment), sin embargo al momento de montar el deployment de wordpress nos salió varias veces el mismo error, se puede ver a continuación
+
+
+
+Y no pudimos solucionarlo, intentamos tumbando el clúster y volviendolo a crear, hasta cambiamos de cuenta y creamos nuevos proyectos pero siempre nos salió lo mismo.
+
+## 2. Arquitectura del sistema
+
+A continuación se observa el diagrama de la arquitectura usada para nuestro proyecto.
+
+![tele - Frame 1](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/1826086f-20be-4a66-a1e2-d0180e522d1a)
+
+
+## 3. Descripción del ambiente de desarrollo y técnico
+
+El reto se realizó en GCP y utilizamos el paso a paso que nos proporciona [Google cloud](https://cloud.google.com/kubernetes-engine/docs/tutorials/persistent-disk?hl=es-419), el cual explicaremos también a continuación:
+
+### Preparación del espacio de trabajo
+
+Lo primero que haremos es crear un proyecto en la consola de GCP, para nuestro caso se llama _Tele-Reto4-2_, activamos la Cloud Shell y dentro de esta habilitamos la API de administrador de GKE y Cloud SQL, lo cual se hace con el siguiente comando:
+
+```bash
+gcloud services enable container.googleapis.com sqladmin.googleapis.com
+```
+
+### Configuración del entorno de trabajo
+
+En esta sección configuraremos unas variables que vamos a utilizar a través del tutorial y también vamos a clonar el repositorio que contiene los manifiestos que necesitamos.
+
+1. Vamos a configurar la zona que queremos utilizar para Google Cloud CLI, en nuestro caso es _us-west1_, si desean usar una zona diferente se debe cambiar este valor
+
+```bash
+gcloud config set compute/region us-west1
+```
+
+2. Vamos a crear una variable de entorno para el id del proyecto de Google Cloud, este se encuentra en la información del proyecto, en nuestro caso es _tele-reto4-2_
+
+```bash
+export PROJECT_ID=tele-reto4-2
+```
+
+3. Clonamos el repositorio con los manifiestos
+
+```bash
+git clone https://github.com/GoogleCloudPlatform/kubernetes-engine-samples
+```
+
+4. Cambiamos al directorio que usaremos
+
+```bash
+cd kubernetes-engine-samples/quickstarts/wordpress-persistent-disks
+```
+
+5. Creamos una variable de entorno para el directorio de trabajo
+
+```bash
+WORKING_DIR=$(pwd)
+```
+
+### Creación del clúster de GKE
+
+Vamos a crear un clúster de Google Kubernetes Engine en donde va a estar nuestra aplicación de Wordpress
+
+1. Nos dirigimos a la sección de _Kubernetes Engine_, en esta debemos habilitarla y después vamos a la opción de crear un nuevo clúster estándar
+
+2. Le ponemos un nombre, en nuestro caso _cluster-reto4-2_ y en la ubicación dejamos la opción "Zonal"
+
+3. Nos dirigimos a la sección "default pool" y luego a "Nodos", en esta ecogemos como tipo de imagen "Ubuntu con containerd" y el tipo de máquina E2-small
+
+4. Las demás especificaciones pueden quedar default y se crea el clúster. Esto puede tardar unos minutos, cuando veamos que el estado del clúster está con un visto bueno continuamos con el tutorial
+
+5. Volvemos a la consola y nos vamos a conectar al clúster que acabamos de crear con el siguiente comando, recordar cambiar el nombre del cluster y la región en caso de ser necesario
+
+```bash
+gcloud container clusters get-credentials cluster-reto4-2 --region us-west1
+```
+
+### Creación del PVC y PV
+
+1. Corremos el manifiesto del PVC que se encuentra en el repositorio con el siguiente comando
+
+```bash
+kubectl apply -f $WORKING_DIR/wordpress-volumeclaim.yaml
+```
+
+2. Verificamos que se haya creado correctamente haciendo
+
+
+```bash
+kubectl get pvc
+```
+
+Al hacer este comando debe salir una pequeña tabla en donde el estado debe decir BOUND, si es así podemos continuar con los siguientes pasos
+
+### Creación de la base de datos
+
+Vamos a crear una instancia de MySQL en Cloud SQL, que es el servicio de base de datos que nos ofrece GCP
+
+1. Creamos la instancia llamada mysql-wordpress-instance por medio de la consola
+
+```bash
+INSTANCE_NAME=mysql-wordpress-instance
+gcloud sql instances create $INSTANCE_NAME
+```
+
+2. Creamos una variable de entorno para guardar el nombre de la conexión de la instancia que acabamos de crear
+
+```bash
+export INSTANCE_CONNECTION_NAME=$(gcloud sql instances describe $INSTANCE_NAME \
+    --format='value(connectionName)')
+```
+
+3. Dentro de la instancia vamos a crear una base de datos para Wordpress
+
+```bash
+gcloud sql databases create wordpress --instance $INSTANCE_NAME
+```
+
+4. Vamos a crear los datos para poder entrar a la base de datos de wordpress, en este caso vamos a usar el usuario _wordpress_ y una contraseña aleatoria:
+
+```bash
+CLOUD_SQL_PASSWORD=$(openssl rand -base64 18)
+gcloud sql users create wordpress --host=% --instance $INSTANCE_NAME \
+    --password $CLOUD_SQL_PASSWORD
+```
+
+Para poder conocer la contraseña que se ha creado debemos hacer el siguiente comando
+
+```bash
+echo $CLOUD_SQL_PASSWORD
+```
+
+Y debemos guardar este dato en algún lugar seguro pues si cerramos la terminal se va a perder la contraseña
+
+En este momento si nos dirigimos a la sección _SQL_ en la interfaz de GCP podremos ver la instancia _mysql-wordpress-instance_, y si entramos a esta y nos dirigimos al apartado _Cloud SQL Studio_ podemos entrar a la base de datos de wordpress con las credenciales que creamos en los pasos anteriores.
+
+### Configuración para crear Wordpress
+
+Ahora vamos a configurar una cuenta de servicio para que la aplicación de Wordpress que vamos a crear pueda acceder a la instancia de MySQL, esto lo lograremos a través de un proxy de Cloud SQL
+
+1. Creamos una cuenta de servicio
+
+```bash
+SA_NAME=cloudsql-proxy
+gcloud iam service-accounts create $SA_NAME --display-name $SA_NAME
+```
+
+2. Creamos una variable de entorno para guardar el correo de la cuenta de servicio
+
+```bash
+SA_EMAIL=$(gcloud iam service-accounts list \
+    --filter=displayName:$SA_NAME \
+    --format='value(email)')
+```
+
+3. Agregamos la función _cloudsql.client_ a la cuenta de servicio
+
+```bash
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --role roles/cloudsql.client \
+    --member serviceAccount:$SA_EMAIL
+```
+
+4. Creamos una clave para la cuenta de servicio
+
+```bash
+gcloud iam service-accounts keys create $WORKING_DIR/key.json \
+    --iam-account $SA_EMAIL
+```
+
+Ahora vamos a crear 2 secretos de Kubernetes para las credenciales que necesitamos
+
+5. Creamos un secreto para las credenciales de MySQL
+
+```bash
+kubectl create secret generic cloudsql-db-credentials \
+    --from-literal username=wordpress \
+    --from-literal password=$CLOUD_SQL_PASSWORD
+```
+
+6. Creamos un secreto para las credenciales de la cuenta de servicio
+
+```bash
+kubectl create secret generic cloudsql-instance-credentials \
+    --from-file $WORKING_DIR/key.json
+```
+
+### Implementación de Wordpress
+
+1. Reemplazamos la variable de entorno INSTANCE_CONNECTION_NAME en el archivo wordpress_cloudsql.yaml haciendo el siguiente comando
+
+```bash
+cat $WORKING_DIR/wordpress_cloudsql.yaml.template | envsubst > \
+    $WORKING_DIR/wordpress_cloudsql.yaml
+```
+
+2. Este manifiesto cuenta con solo 1 replica para la aplicación, sin embargo, como nosotros queremos tener 2 replicas editamos el manifiesto
+
+```bash
+sudo nano wordpress_cloudsql.yaml
+```
+
+Y en el apartado de replicas cambiamos el 1 por 2
+
+3. Implementamos el manifiesto
+
+```bash
+kubectl create -f $WORKING_DIR/wordpress_cloudsql.yaml
+```
+
+4. Revisamos que la implementación haya funcionado correctamente, debemos ver el cambio de estado a _Running_
+
+```bash
+kubectl get pod -l app=wordpress --watch
+```
+
+### Exponemos el servicio de Wordpress
+
+1. Creamos el servicio de tipo LoadBalancer
+
+```bash
+kubectl create -f $WORKING_DIR/wordpress-service.yaml
+```
+
+2. La creación del servicio toma unos segundos, así que esperamos a que este tenga asignada una IP externa
+
+```bash
+kubectl get svc -l app=wordpress --watch
+```
+
+3. Copiamos la IP Externa que se le haya asignado al servicio e ingresamos a esta por medio de internet
+
+```bash
+http://ip-externa
+```
+
+### Configuración de Wordpress
+
+Al entrar al link anterior se deben llenar unos campos para poder entrar a la páigna del administrador de wordpress, en los campos de usuario y contraseña poner los datos creados para la base de datos de wordpress y ya puedes crear tu página web.
+
+### Configuración del dominio
+
+Cuando ya tengas tu página web funcionando dirigete a tu servidor DNS y crea un registro A con el nombre del subdominio que deseas, en nuestro caso es reto4, y lo vinculas a la IP Externa del servicio de wordpress. 
+
+Espera unos segundos y ya podrás acceder a tu página web por medio de tu dominio.
+
+
+## 4. Referencias
+
+- https://cloud.google.com/kubernetes-engine/docs/tutorials/persistent-disk?hl=es-419
+- https://cloud.google.com/filestore/docs/csi-driver?hl=es-419#deployment
+- https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/tree/main/quickstarts/wordpress-persistent-disks
