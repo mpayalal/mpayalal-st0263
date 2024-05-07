@@ -25,7 +25,7 @@
 - Certificado SSL
 - Un servidor NFS para los archivos, este lo intentamos realizar siguiendo el [tutorial que provee Google](https://cloud.google.com/filestore/docs/csi-driver?hl=es-419#deployment), sin embargo al momento de montar el deployment de wordpress nos salió varias veces el mismo error, se puede ver a continuación
 
-
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/7abf9b45-6bc3-41d7-a92f-278184fb47ba)
 
 Y no pudimos solucionarlo, intentamos tumbando el clúster y volviendolo a crear, hasta cambiamos de cuenta y creamos nuevos proyectos pero siempre nos salió lo mismo.
 
@@ -90,9 +90,16 @@ Vamos a crear un clúster de Google Kubernetes Engine en donde va a estar nuestr
 
 2. Le ponemos un nombre, en nuestro caso _cluster-reto4-2_ y en la ubicación dejamos la opción "Zonal"
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/30625715-f298-4298-ae16-127f6e1410cd)
+
 3. Nos dirigimos a la sección "default pool" y luego a "Nodos", en esta ecogemos como tipo de imagen "Ubuntu con containerd" y el tipo de máquina E2-small
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/a7fff9dc-da25-4d96-9835-90869e4362bc)
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/e2b75d6c-f063-46c4-aa41-b47640be1e47)
+
 4. Las demás especificaciones pueden quedar default y se crea el clúster. Esto puede tardar unos minutos, cuando veamos que el estado del clúster está con un visto bueno continuamos con el tutorial
+
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/9d3f82cd-9b21-4f6e-86af-6952570b04b9)
 
 5. Volvemos a la consola y nos vamos a conectar al clúster que acabamos de crear con el siguiente comando, recordar cambiar el nombre del cluster y la región en caso de ser necesario
 
