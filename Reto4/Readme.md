@@ -103,7 +103,9 @@ Vamos a crear un clúster de Google Kubernetes Engine en donde va a estar nuestr
 gcloud container clusters get-credentials cluster-reto4-2 --region us-west1
 ```
 
-### Creación del PVC y PV
+### Creación del NFS y PV - PVC
+
+Para este apartado nos basamos en el tutorial que provee [Google coud](https://cloud.google.com/filestore/docs/csi-driver?hl=es-419#deployment)
 
 1. Corremos el manifiesto del PVC que se encuentra en el repositorio con el siguiente comando
 
