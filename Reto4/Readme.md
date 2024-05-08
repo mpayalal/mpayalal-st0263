@@ -19,21 +19,17 @@
 - Balanceador de cargas de Kubernetes
 - Dos pods de Wordpress
 - Una base de datos MySQL en GCP
+- Un servidor NFS para los archivos
 
 #### 1.2. Aspectos no desarrollados:
 
 - Certificado SSL
-- Un servidor NFS para los archivos, este lo intentamos realizar siguiendo el [tutorial que provee Google](https://cloud.google.com/filestore/docs/csi-driver?hl=es-419#deployment), sin embargo al momento de montar el deployment de wordpress nos salió varias veces el mismo error, se puede ver a continuación
-
-![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/7abf9b45-6bc3-41d7-a92f-278184fb47ba)
-
-Y no pudimos solucionarlo, intentamos tumbando el clúster y volviendolo a crear, hasta cambiamos de cuenta y creamos nuevos proyectos pero siempre nos salió lo mismo.
 
 ## 2. Arquitectura del sistema
 
 A continuación se observa el diagrama de la arquitectura usada para nuestro proyecto.
 
-![tele - Frame 1](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/1826086f-20be-4a66-a1e2-d0180e522d1a)
+![ArqReto4Tele drawio](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/ff29a99e-f6f3-4a87-b8dc-5a5a58f5120e)
 
 
 ## 3. Descripción del ambiente de desarrollo y técnico
@@ -275,6 +271,12 @@ Al entrar al link anterior se deben llenar unos campos para poder entrar a la p�
 Cuando ya tengas tu página web funcionando dirigete a tu servidor DNS y crea un registro A con el nombre del subdominio que deseas, en nuestro caso es reto4, y lo vinculas a la IP Externa del servicio de wordpress. 
 
 Espera unos segundos y ya podrás acceder a tu página web por medio de tu dominio.
+
+### Evidencia
+
+A continuación de muestra una captura de pantalla de nuestra página funcionando
+
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/b3779b96-6b9c-4499-a466-8831025e5690)
 
 
 ## 4. Referencias
