@@ -107,7 +107,7 @@ gcloud container clusters get-credentials cluster-reto4-2 --region us-west1
 
 Para este apartado nos basamos en el tutorial que provee [Google coud](https://cloud.google.com/filestore/docs/csi-driver?hl=es-419#deployment)
 
-1. Antes de empezar debemos habilitar la API de Cloud Filestore y la API de Google Kubernetes Engine, para esto pueden entrar al siguiente enlace: [Habilita las API](h ttps://console.cloud.google.com/flows/enableapi?apiid=container.googleapis.com%2Cfile.googleapis.com&hl=es-419&_ga=2.180154595.671953939.1715183695-1082497697.1714848645&_gac=1.118745723.1714961732.CjwKCAjw3NyxBhBmEiwAyofDYYHyvqIxZaEmvGafpJTSskf7rpX_rBdXg4XCTYYAMNdtWLzAnI6kYxoC1hgQAvD_BwE)
+1. Antes de empezar debemos habilitar la API de Cloud Filestore y la API de Google Kubernetes Engine, para esto pueden entrar al siguiente enlace: [Habilita las API](https://console.cloud.google.com/flows/enableapi?apiid=container.googleapis.com%2Cfile.googleapis.com&hl=es-419&_ga=2.180154595.671953939.1715183695-1082497697.1714848645&_gac=1.118745723.1714961732.CjwKCAjw3NyxBhBmEiwAyofDYYHyvqIxZaEmvGafpJTSskf7rpX_rBdXg4XCTYYAMNdtWLzAnI6kYxoC1hgQAvD_BwE)
 
 2. Habilitamos el controlador de CSI de Filestore en el clúster creado anteriormente
 
