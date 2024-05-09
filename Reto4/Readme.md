@@ -8,7 +8,7 @@
 - Camilo Palacio Restrepo - cpalacior@efit.edu.co
   
 <br>**Título:** Kubernetes
-<br>**Objetivo:** Desplegar la misma aplicación del Reto 3 en un cluster de alta disponibilidad en Kubernetes.<br>**Sustentación:** https://www.youtube.com/watch?v=UZ7cgyIR71Q
+<br>**Objetivo:** Desplegar la misma aplicación del Reto 3 en un cluster de alta disponibilidad en Kubernetes.<br>**Sustentación:** https://www.youtube.com/watch?v=RNcaMWI4ixE
 
 
 ## 1. Descripción de la actividad
