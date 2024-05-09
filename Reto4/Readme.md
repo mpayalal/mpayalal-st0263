@@ -126,7 +126,14 @@ gcloud container clusters update $CLUSTER_NAME \
     - Se escoge la red VPC en la que nos encontremos, en nuestro caso es la default
     - Se asigna un nombre al archivo compartido, para nosotros es nfs_files
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/018737bd-5e37-4d24-9f85-ffdb3ecb56b2)
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/e5dd9378-f79a-41af-9b27-69fe6666d478)
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/4cfcdea1-47b2-40c5-847a-bf29546588bf)
+
 5. Creamos la instancia y esperamos a que esta se encuentre con el visto bueno
+
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/a9bc5ac1-7a1b-49ba-be32-b7876700af2e)
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/806a15cc-7073-4092-8387-253c3116aac8)
 
 6. Creamos el archivo _nfs-pv-pvc.yaml_
 
@@ -178,7 +185,9 @@ volumeAttributes:
       ip: ip_instancia
       volume: nombre_archivo_compartido
 ```
-La IP se encuentra en la siguiente parte:
+La IP de la instancia se encuentra en la siguiente parte:
+
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/d926235f-f973-42bc-8f73-deb21ee276f9)
 
 7. Corremos el manifiesto que acabamos de crear
 
