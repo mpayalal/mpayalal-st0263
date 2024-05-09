@@ -107,14 +107,86 @@ gcloud container clusters get-credentials cluster-reto4-2 --region us-west1
 
 Para este apartado nos basamos en el tutorial que provee [Google coud](https://cloud.google.com/filestore/docs/csi-driver?hl=es-419#deployment)
 
-1. Corremos el manifiesto del PVC que se encuentra en el repositorio con el siguiente comando
+1. Antes de empezar debemos habilitar la API de Cloud Filestore y la API de Google Kubernetes Engine, para esto pueden entrar al siguiente enlace: [Habilita las API](h ttps://console.cloud.google.com/flows/enableapi?apiid=container.googleapis.com%2Cfile.googleapis.com&hl=es-419&_ga=2.180154595.671953939.1715183695-1082497697.1714848645&_gac=1.118745723.1714961732.CjwKCAjw3NyxBhBmEiwAyofDYYHyvqIxZaEmvGafpJTSskf7rpX_rBdXg4XCTYYAMNdtWLzAnI6kYxoC1hgQAvD_BwE)
+
+2. Habilitamos el controlador de CSI de Filestore en el clúster creado anteriormente
 
 ```bash
-kubectl apply -f $WORKING_DIR/wordpress-volumeclaim.yaml
+gcloud container clusters update $CLUSTER_NAME \
+   --update-addons=GcpFilestoreCsiDriver=ENABLED
 ```
 
-2. Verificamos que se haya creado correctamente haciendo
+3. Creamos una instancia de Filestore en GCP, para esto buscamos la sección _Filestore_ y seleccionamos la opción de _Crear instancia_
 
+4. Llenamos los siguientes datos:
+    - Nombre de la instancia, en este caso va a ser _nfs-reto4_
+    - Nivel del servicio, nosotros usaremos el básico por temas de costos
+    - Tipo de almacenamiento es HDD
+    - La región se debe escoger la misma con la que se viene trabajando
+    - Se escoge la red VPC en la que nos encontremos, en nuestro caso es la default
+    - Se asigna un nombre al archivo compartido, para nosotros es nfs_files
+
+5. Creamos la instancia y esperamos a que esta se encuentre con el visto bueno
+
+6. Creamos el archivo _nfs-pv-pvc.yaml_
+
+```bash
+sudo nano nfs-pv-pvc.yaml
+```
+
+Y en este se pondrá la siguiente información:
+
+```bash
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pv
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  csi:
+    driver: filestore.csi.storage.gke.io
+    volumeHandle: "modeInstance/us-central1-a  /nfs-reto4/nfs_files"
+    volumeAttributes:
+      ip: 10.56.30.210
+      volume: nfs_files
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: podpvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: nfs-pv
+  resources:
+    requests:
+      storage: 1Ti
+```
+
+En las siguientes líneas se debe adaptar la información a los datos que hayas utilizado en el paso 4, vendría siendo
+
+```bash
+volumeHandle: "modeInstance/region_escogida  /nombre_instancia/nombre_archivo_compartido" 
+volumeAttributes:
+      ip: ip_instancia
+      volume: nombre_archivo_compartido
+```
+La IP se encuentra en la siguiente parte:
+
+7. Corremos el manifiesto que acabamos de crear
+
+```bash
+kubectl apply -f nfs-pv-pvc.yaml
+```
+
+8. Verificamos que se haya creado correctamente haciendo
 
 ```bash
 kubectl get pvc
