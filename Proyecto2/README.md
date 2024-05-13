@@ -31,7 +31,7 @@ Se cumplió con todo lo especificado para este reto.
 
 A continuación se observa el diagrama de la arquitectura usada para nuestro proyecto.
 
-![ArqProy2Tele](ArqProy2Tele.png)
+![ArqProy2Tele](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/6eb68244-332e-4222-b2d0-cada9021a3ed)
 
 Además que encontramos el siguiente link para acceder a una mejor visualización:
 [Enlace Arquitectura](https://drive.google.com/file/d/1yIdAA2IHkWAKPc8P4sF3KsXP04a8TMH-/view?usp=sharing)
@@ -43,9 +43,9 @@ Para este proyecto, como se ha mencionado anteriormente, se realizaron diferente
 ### 1. Creacion de las instancias 
 Se modifica el disco de arranque de las máquinas virtuales y configuro el firewall
 
-![disco-arr](image-3.png)
+![image-3](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/3bbe40cf-1c85-43fc-8ea0-58d81cb83e34)
 
-![firewall](image-4.png)
+![image-4](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/20bdf759-d73a-40c6-9e89-717cf84421ad)
 
 Se actualiza la máquina virtual 
 
@@ -64,7 +64,7 @@ microk8s status --wait-ready
 ```
 Nos va a aparecer que no tenemos los permisos, entonces nos procedemos a crear el directorio `./kube` y copiamos los comandos que nos aparecen; luego reiniciamos la máquina para que se tomen los permisos necesarios
 
-![status](image-5.png)
+![image-5](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/7599c5aa-8bd5-40bc-919e-9d7a5bf7c111)
 
 encendemos los servicios necesarios
 ```shell
@@ -76,10 +76,12 @@ En la instancia maestro se crea el comando para unirse al cluster
 microk8s add-node
 ```
 debe aparecer un mensaje así
-![add-node](image-6.png)
+
+![image-6](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/d65ff6f2-8c4d-4f95-a8e9-21913b8000f7)
 
 en las intancias worker se debe pegar el comando de join que apareció en el maestro
-![join cluster](image-7.png)
+
+![image-7](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/22197fd4-4e8f-458e-924e-3fba0a650f71)
 
 observamos que en el maestro se puedan ver todos los nodos 
 ```shell
@@ -87,7 +89,7 @@ microk8s kubectl get nodes
 ```
 Debería aparecer algo así
 
-![cluster](image-8.png)
+![image-8](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/de75cb1b-be9b-4658-a393-727bc7da7f6c)
 
 ### 3. Configuración del NFS-Server
 
@@ -209,7 +211,7 @@ microk8s kubectl apply -f - < pvc-nfs.yaml
 
 y una vez se corran dichos comandos deberá haberse vinculado(bound) nuestro pvc. Además podremos ver en el servidor NFS el pvc en nuestro directorio compartido:
 
-![pvc en nfs](pvc_nfs.png)
+![pvc_nfs](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/a0f51d1f-1eab-4f02-9750-ada0f2dade94)
 
 ## 4. Descripción del ambiente de EJECUCIÓN
 
