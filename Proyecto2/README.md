@@ -15,8 +15,8 @@
 
 - Cluster de kubernetes crado con microk8s 
   - Una instancia Master
-  - Dos o más instancias Worker
-- Crear nuestro propio dominio (miguapamundi.tech)
+  - Dos instancias Worker
+- Crear nuestro propio dominio (proyecto2.miguapamundi.tech)
 - Certificado SSL
 - Capa de acceso con microk8s Ingress
 - Instancias de Wordpress con sus deployment, service, pv y pvc
@@ -25,7 +25,7 @@
 
 #### 1.2. Aspectos no desarrollados:
 
-Se cumplió con todo lo especificado para este reto.
+Se cumplió con todo lo especificado para este proyecto.
 
 ## 2. Arquitectura del sistema
 
@@ -33,14 +33,14 @@ A continuación se observa el diagrama de la arquitectura usada para nuestro pro
 
 ![ArqProy2Tele](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/6eb68244-332e-4222-b2d0-cada9021a3ed)
 
-Además que encontramos el siguiente link para acceder a una mejor visualización:
+Además encontramos el siguiente link para acceder a una mejor visualización:
 [Enlace Arquitectura](https://drive.google.com/file/d/1yIdAA2IHkWAKPc8P4sF3KsXP04a8TMH-/view?usp=sharing)
 
 ## 3. Descripción del ambiente de desarrollo y técnico
 
 Para este proyecto, como se ha mencionado anteriormente, se realizaron diferentes servicios e instancias, cada uno de estos fue hecho en una instancia E2 en Google Cloud Service, con una imagen de Ubuntu 22.04 LTS y el tipo de instancia es e2.medium. A continuación se detallan los pasos de cada uno de los servicios.
 
-### 1. Creacion de las instancias 
+### 1. Creación de las instancias 
 Se modifica el disco de arranque de las máquinas virtuales y configuro el firewall
 
 ![image-3](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/3bbe40cf-1c85-43fc-8ea0-58d81cb83e34)
@@ -213,7 +213,451 @@ y una vez se corran dichos comandos deberá haberse vinculado(bound) nuestro pvc
 
 ![pvc_nfs](https://github.com/mpayalal/mpayalal-st0263/assets/85038450/a0f51d1f-1eab-4f02-9750-ada0f2dade94)
 
-## 4. Descripción del ambiente de EJECUCIÓN
+### 5. Configuración de manifiestos MySQL, Wordpress e Ingress
+
+En esta sección vamos a crear los manifiestos para los diferentes servicios que se utilizaran en el proyecto, todos los que vamos a mostrar a continuación se encuentran en la carpeta Scripts con los datos que utilizamos puntualmente para este proyecto.
+
+Primero vamos a crear el servicio de MySQL, para esto creamos el archivo `mysql-pv-pvc.yaml`
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+spec:
+  storageClassName: nfs-csi
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 0.0.0.0 #ip del nfs-server
+    path: /srv/nfs #cambiar por la ruta escogida
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  labels:
+    app: mysql
+spec:
+  storageClassName: nfs-csi
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+```
+> En este archivo se debe poner la IP privada del servidor NFS que creamos en el paso 3 y también la ruta creada para los archivos compartidos.
+
+Ahora aplicamos este manifiesto para comprobar que funcione correctamente
+
+```shell
+microk8s kubectl apply -f mysql-pv-pvc.yaml
+```
+
+Para verificar hacemos
+
+```shell
+microk8s kubectl get pvc
+```
+
+Y debe salir con el estado BOUND, como se ve a continuación
+
+
+
+Continuamos ahora creando el manifiesto del servicio y deployment de MySQL, `mysql-deployment.yaml`, para esto utilizamos la imagen de [bitnami/mysql](https://hub.docker.com/r/bitnami/mysql)
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    app: wordpress
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: wordpress
+    tier: mysql
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-mysql
+  labels:
+    app: wordpress
+spec:
+  selector:
+    matchLabels:
+      app: wordpress
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress
+        tier: mysql
+    spec:
+      containers:
+      - image: docker.io/bitnami/mysql:8.0
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: <contraseña>
+        - name: MYSQL_DATABASE
+          value: <base_de_datos>
+        - name: MYSQL_USER
+          value: <usuario>
+        - name: MYSQL_PASSWORD
+          value: <contraseña>
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+```
+> Se deben llenar los datos de usuario, contraseña y nombre de base de datos
+
+Aplicamos el manifiesto y confirmamos que se haya creado correctamente revisando el estado del pod
+
+```shell
+microk8s kubectl apply -f mysql-deployment.yaml
+microk8s kubectl get pods
+```
+
+Si se quiere revisar a fondo que la base de datos se haya creado correctamente podemos correr el siguiente comando, cambiando los datos que están en <> por los de tu proyecto
+
+```shell
+microk8s kubectl exec -it <nombre_del_pod> -- mysql -u<usuario> -p<contraseña>
+```
+
+Acá ya estaremos dentro de la terminal de mysql, ahora entonces corremos
+
+```shell
+SHOW DATABASES;
+```
+
+Nos debe salir entre las opciones la base de datos que creamos en el manifiesto, en nuestro caso se llama wordpress, acá la podemos observar:
+
+
+Ya viendo esto podemos estar seguros de su creación, nos salimos de esta terminal haciendo un `exit` y continuamos ahora creando los manifiestos de wordpress.
+
+Crearemos también un manifiesto para el pv-pvc y un para el servicio-deployment, los archivos se ven a continuación:
+
+`wordpress-pv-pvc.yaml`
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wordpress-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-csi
+  nfs:
+    server: 0.0.0.0 #ip del nfs-server
+    path: /srv/nfs #cambiar por la ruta escogida
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+  labels:
+    app: wordpress
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-csi
+  resources:
+    requests:
+      storage: 5Gi
+```
+> En este archivo se debe poner la IP privada del servidor NFS que creamos en el paso 3 y también la ruta creada para los archivos compartidos.
+
+`wordpress-deployment.yaml`, para esto utilizamos la imagen de [wordpress](https://hub.docker.com/_/wordpress)
+```shell
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress
+  labels:
+    app: wordpress
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: wordpress
+    tier: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress
+  labels:
+    app: wordpress
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wordpress
+      tier: frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress
+        tier: frontend
+    spec:
+      containers:
+      - image: wordpress
+        name: wordpress
+        env:
+        - name: WORDPRESS_DATABASE_HOST
+          value: <host_base_de_datos>
+        - name: WORDPRESS_DATABASE_PASSWORD
+          value: <contraseña>
+        - name: WORDPRESS_DATABASE_USER
+          value: <usuario>
+        - name: WORDPRESS_DATABASE_NAME
+          value: <base_de_datos>
+        - name: WORDPRESS_DEBUG
+          value: "1"
+        ports:
+        - containerPort: 80
+          name: wordpress
+        volumeMounts:
+        - name: wordpress-persistent-storage
+          mountPath: /var/www/html
+      volumes:
+      - name: wordpress-persistent-storage
+        persistentVolumeClaim:
+          claimName: wordpress-pvc
+```
+> Se deben llenar los datos de usuario, contraseña, nombre de base de datos y host de base de datos, este último es el nombre del servicio que creamos para mysql, y los otros son los mismos que se escribieron en el manifiesto de deployment para mysql.
+
+Ahora aplicamos estos manifiestos y revisamos que tanto el pvc y los pods se hayan creado correctamente
+
+```shell
+microk8s kubectl apply -f wordpress-pv-pvc.yaml
+microk8s kubectl get pvc
+```
+
+```shell
+microk8s kubectl apply -f wordpress-deployment.yaml
+microk8s kubectl get pods
+```
+
+Después de que todo lo anterior esté funcionando correctamente, creamos el manifiesto del ingress para poder acceder a nuestro proyecto, `ing-wordpress.yaml`
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: http-ingress
+  labels:
+    app: wordpress
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: wordpress
+            port:
+              number: 80
+```
+Aplicamos este manifiesto
+
+```shell
+microk8s kubectl apply -f ing-wordpress.yaml
+```
+
+Ahora si ingresamos a la **IP pública** de la máquina **MASTER** nos encontraremos con la página de configuración de Wordpress, llenamos los datos y ya tenemos nuestra página funcionando.
+
+### 6. Certificación SSL
+
+*Antes de comenzar con este paso en tu servidor DNS debes agregar el registro para la IP pública de la máquina MASTER*
+
+Primero vamos a instalar el cert-manager
+
+```shell
+microk8s kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.1/cert-manager.yaml
+```
+
+Para revisar que se instaló correctamente debemos ver 3 pods corriendo al hacer el siguiente comando
+
+```shell
+microk8s kubectl get pods -n=cert-manager
+```
+
+Ahora vamos a crear 2 claves .pem para los archivos `cluster-issuer-staging.yaml` y `cluster-issuer.yaml`, esto lo hacemos de la siguiente manera:
+
+```shell
+openssl genrsa -out letsencrypt-staging.pem 2048
+
+openssl genrsa -out letsencrypt-private-key.pem 2048
+```
+
+Luego creamos un secreto en Kubernetes con estas claves
+
+```shell
+sudo microk8s kubectl create secret generic letsencrypt-staging --from-file=letsencrypt-staging.pem
+
+microk8s kubectl create secret generic letsencrypt-private-key --from-file=letsencrypt-private-key.pem
+```
+
+Después creamos los manifiestos mencionados anteriormente
+
+`cluster-issuer-staging.yaml`
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+#change to your email
+    email: tucorreo@gmail.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+    - http01:
+        ingress:
+          class: public
+```
+
+`cluster-issuer.yaml`
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # The ACME server URL
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # Email address used for ACME registration
+    email: tucorreo@gmail.com
+    # Name of a secret used to store the ACME account private key
+    privateKeySecretRef:
+      name: letsencrypt-private-key
+    # Enable the HTTP-01 challenge provider
+    solvers:
+      - http01:
+          ingress:
+            class: public
+```
+
+Aplicamos ambos manifiestos
+
+```shell
+microk8s kubectl apply -f cluster-issuer-staging.yaml
+
+microk8s kubectl apply -f cluster-issuer.yaml
+```
+
+Seguimos ahora con la creación del manifiesto del nuevo ingress el cual hará la petición del certificado para nuestro dominio
+
+`ingress-routes.yaml`
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-routes
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+spec:
+  tls:
+  - hosts:
+#change to your domain
+    - tudominio.com
+    secretName: tls-secret
+  rules:
+#change to your domain
+  - host: tudominio.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wordpress
+            port:
+              number: 80
+```
+
+Aplica el manifiesto y verificamos que el certificado haya sido creado exitosamente
+
+```shell
+microk8s kubectl apply -f ingress-routes.yaml
+
+microk8s kubectl get certificate
+```
+> Al hacer el segundo comando, el estado debe pasar de falso a verdadero, esto toma entre 1 a 2 minutos, si pasado este tiempo no pasa a veradero revisa las configuraciones y vuelve a intentarlo
+
+Si ya salió verdadero cambiamos en el archivo `ingress-routes.yaml` el cluster-issuer de staging a prod, debe quedar así:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-routes
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+#change to your domain
+    - tudominio.com
+    secretName: tls-secret
+  rules:
+#change to your domain
+  - host: tudominio.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wordpress
+            port:
+              number: 80
+```
+
+Volvemos a aplicarlo y revisar que pase a Verdadero
+
+```shell
+microk8s kubectl apply -f ingress-routes.yaml
+
+microk8s kubectl get certificate
+```
+
+Ya podrás entrar a tu página por medio de https.
+
+
+
 
 # Referencias
 
@@ -222,6 +666,7 @@ y una vez se corran dichos comandos deberá haberse vinculado(bound) nuestro pvc
 - [Use NFS for Persistent Volumes on MicroK8s](https://microk8s.io/docs/how-to-nfs)
 - [Kubernetes Tutorial for BEGINNERS | Pods Deployments Services Ingress Explained | MicroK8s Install](https://youtu.be/3T6skoL3RTA?si=x-UUe6LjNKz6C4MR)
 - [Bitnami package for MySQL](https://hub.docker.com/r/bitnami/mysql)
-- [Bitnami package for WordPress](https://hub.docker.com/r/bitnami/wordpress)
+- [Package for WordPress](https://hub.docker.com/_/wordpress)
 - [Example: Deploying WordPress and MySQL with Persistent Volumes](https://kubernetes.io/docs/tutorials/stateful-application/mysql-wordpress-persistent-volume/)
+- [Letsencrypt for microk8s](https://stackoverflow.com/questions/67430592/how-to-setup-letsencrypt-with-kubernetes-microk8s-using-default-ingress)
 - [Gemini AI](https://g.co/gemini/share/1f1cfb7d6152)
