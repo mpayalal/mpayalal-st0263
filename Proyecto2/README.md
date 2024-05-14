@@ -497,6 +497,7 @@ microk8s kubectl apply -f ing-wordpress.yaml
 
 Ahora si ingresamos a la **IP pública** de la máquina **MASTER** nos encontraremos con la página de configuración de Wordpress, llenamos los datos y ya tenemos nuestra página funcionando.
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/9d441db1-2522-4ae6-9d9b-30456e09e6dd)
 ![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/cbc729ee-e476-4044-b9c9-836a8d6823d8)
 
 ### 6. Certificación SSL
