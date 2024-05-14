@@ -8,7 +8,7 @@
 - Camilo Palacio Restrepo - cpalacior@efit.edu.co
   
 <br>**Título:** Cluster Kubernetes
-<br>**Objetivo:** Implementar un CMS empleando la tecnología de kubernetes, crando un cluster con mínimo 3 máquinas viruales (master y workers) usando microk8s, con su propio dominio y certificado SSL. <br>**Sustentación:** 
+<br>**Objetivo:** Implementar un CMS empleando la tecnología de kubernetes, crando un cluster con mínimo 3 máquinas viruales (master y workers) usando microk8s, con su propio dominio y certificado SSL. <br>**Sustentación:** https://www.youtube.com/watch?v=zdYERn8ba7U
 
 ## 1. Descripción de la actividad
 #### 1.1. Aspectos cumplidos:
