@@ -266,6 +266,7 @@ microk8s kubectl get pvc
 
 Y debe salir con el estado BOUND, como se ve a continuación
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/e49a2f4b-3bdf-4cbf-9dea-7521654e7681)
 
 
 Continuamos ahora creando el manifiesto del servicio y deployment de MySQL, `mysql-deployment.yaml`, para esto utilizamos la imagen de [bitnami/mysql](https://hub.docker.com/r/bitnami/mysql)
@@ -329,10 +330,11 @@ spec:
 ```
 > Se deben llenar los datos de usuario, contraseña y nombre de base de datos
 
-Aplicamos el manifiesto y confirmamos que se haya creado correctamente revisando el estado del pod
+Aplicamos el manifiesto y confirmamos que se haya creado correctamente revisando el estado del pod, el cual debe salir RUNNING
 
 ```shell
 microk8s kubectl apply -f mysql-deployment.yaml
+
 microk8s kubectl get pods
 ```
 
@@ -350,6 +352,7 @@ SHOW DATABASES;
 
 Nos debe salir entre las opciones la base de datos que creamos en el manifiesto, en nuestro caso se llama wordpress, acá la podemos observar:
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/816ffafd-b68a-4562-b9bb-63b0ceb523e6)
 
 Ya viendo esto podemos estar seguros de su creación, nos salimos de esta terminal haciendo un `exit` y continuamos ahora creando los manifiestos de wordpress.
 
@@ -455,11 +458,13 @@ Ahora aplicamos estos manifiestos y revisamos que tanto el pvc y los pods se hay
 
 ```shell
 microk8s kubectl apply -f wordpress-pv-pvc.yaml
+
 microk8s kubectl get pvc
 ```
 
 ```shell
 microk8s kubectl apply -f wordpress-deployment.yaml
+
 microk8s kubectl get pods
 ```
 
@@ -492,6 +497,8 @@ microk8s kubectl apply -f ing-wordpress.yaml
 
 Ahora si ingresamos a la **IP pública** de la máquina **MASTER** nos encontraremos con la página de configuración de Wordpress, llenamos los datos y ya tenemos nuestra página funcionando.
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/cbc729ee-e476-4044-b9c9-836a8d6823d8)
+
 ### 6. Certificación SSL
 
 *Antes de comenzar con este paso en tu servidor DNS debes agregar el registro para la IP pública de la máquina MASTER*
@@ -507,6 +514,8 @@ Para revisar que se instaló correctamente debemos ver 3 pods corriendo al hacer
 ```shell
 microk8s kubectl get pods -n=cert-manager
 ```
+
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/e07ccbf5-b0bb-4666-ac81-3a612c4ffc12)
 
 Ahora vamos a crear 2 claves .pem para los archivos `cluster-issuer-staging.yaml` y `cluster-issuer.yaml`, esto lo hacemos de la siguiente manera:
 
@@ -617,6 +626,8 @@ microk8s kubectl get certificate
 ```
 > Al hacer el segundo comando, el estado debe pasar de falso a verdadero, esto toma entre 1 a 2 minutos, si pasado este tiempo no pasa a veradero revisa las configuraciones y vuelve a intentarlo
 
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/0ddba1fe-1460-46dc-b1af-914edd403a47)
+
 Si ya salió verdadero cambiamos en el archivo `ingress-routes.yaml` el cluster-issuer de staging a prod, debe quedar así:
 
 ```yaml
@@ -656,8 +667,8 @@ microk8s kubectl get certificate
 
 Ya podrás entrar a tu página por medio de https.
 
-
-
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/3add5e90-9565-47c8-a7f1-ac3e7723724e)
+![image](https://github.com/mpayalal/mpayalal-st0263/assets/85038378/619a59d4-3ea1-46a1-b4b6-5bf832a5a7e3)
 
 # Referencias
 
